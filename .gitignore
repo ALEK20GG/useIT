@@ -1,0 +1,40 @@
+# Node / SvelteKit (frontend)
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+frontend/.svelte-kit/
+frontend/build/
+frontend/.vite/
+
+# Python (backend)
+backend/.venv/
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/.mypy_cache/
+backend/.pytest_cache/
+
+# Environment & secrets
+.env
+*/.env
+backend/env.local
+backend/.env.*
+backend/env.*
+
+# OS / editor junk
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# IDE / tooling
+.vscode/
+.idea/
+*.code-workspace
+
+
