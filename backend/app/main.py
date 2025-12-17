@@ -2,7 +2,7 @@
 FastAPI application exposing a light wrapper over Qdrant.
 """
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
@@ -210,4 +210,27 @@ def semantic_search(
         )
 
     return results
+
+
+#
+# Image analysis (placeholder) – receives an image file from the frontend.
+#
+
+
+@app.post("/analyze/image")
+async def analyze_image(file: UploadFile = File(...)) -> dict[str, str]:
+    """
+    Accept an image upload and return a placeholder analysis.
+
+    Later, this can be wired to a vision model or external service.
+    """
+
+    # We read the bytes now so that in future we can pass them to a model.
+    _ = await file.read()
+
+    return {
+        "filename": file.filename or "uploaded-image",
+        "content_type": file.content_type or "image/*",
+        "summary": "Image received correctly. Analysis model is not implemented yet.",
+    }
 
