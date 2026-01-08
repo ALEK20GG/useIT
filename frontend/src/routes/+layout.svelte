@@ -19,6 +19,7 @@
 			<a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a>
 			<a href="/analyze" class="nav-link" class:active={$page.url.pathname === '/analyze'}>Scansiona</a>
 			<a href="/semantic" class="nav-link" class:active={$page.url.pathname === '/semantic'}>Cerca</a>
+			<a href="/pdf" class="nav-link" class:active={$page.url.pathname === '/pdf'}>PDF</a>
 		</div>
 	</div>
 </nav>
