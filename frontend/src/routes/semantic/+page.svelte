@@ -1,465 +1,334 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import PdfPreview from '$lib/PdfPreview.svelte';
 
   const BACKEND_URL = 'http://127.0.0.1:8000';
-
-  type Note = {
-    title: string;
-    content: string;
-    type?: string | null;
-    tags: string[];
-  };
 
   type SearchHit = {
     id: string | number;
     score: number;
     title: string;
-    content: string;
+    content?: string;
     type?: string | null;
-    tags: string[];
+    tags?: string[];
+    pdf_path?: string;
   };
 
-  let collectionName = 'notes';
-
-  // Ingest form state
-  let noteTitle = '';
-  let noteContent = '';
-  let noteType = 'school-note';
-  let noteTags = '';
-  let ingestLoading = false;
-  let ingestMessage = '';
-  let ingestError = '';
-
-  // Search form state
   let query = '';
-  let searchLimit = 5;
   let searchLoading = false;
   let searchError = '';
   let results: SearchHit[] = [];
-
-  async function ingestNote() {
-    ingestError = '';
-    ingestMessage = '';
-
-    if (!noteTitle.trim() || !noteContent.trim()) {
-      ingestError = 'Title and content are required.';
-      return;
-    }
-
-    ingestLoading = true;
-    try {
-      const tags = noteTags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
-
-      const body = {
-        collection_name: collectionName,
-        notes: [
-          {
-            title: noteTitle,
-            content: noteContent,
-            type: noteType || null,
-            tags
-          } satisfies Note
-        ]
-      };
-
-      const res = await fetch(`${BACKEND_URL}/semantic/ingest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail ?? `Ingest failed with status ${res.status}`);
-      }
-
-      const data = await res.json();
-      ingestMessage = data.message ?? 'Note ingested successfully.';
-
-      // Clear fields a bit to make repeated entry easier
-      noteTitle = '';
-      noteContent = '';
-      // keep type and tags
-    } catch (err) {
-      ingestError = err instanceof Error ? err.message : 'Unknown error during ingest.';
-    } finally {
-      ingestLoading = false;
-    }
-  }
+  let selectedPdf: SearchHit | null = null;
 
   async function runSearch() {
     searchError = '';
     results = [];
-
+    selectedPdf = null;
     if (!query.trim()) {
-      searchError = 'Please enter a query.';
+      searchError = 'Inserisci una query di ricerca.';
       return;
     }
-
     searchLoading = true;
     try {
-      const body = {
-        collection_name: collectionName,
-        query,
-        limit: searchLimit
-      };
-
       const res = await fetch(`${BACKEND_URL}/semantic/search`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection_name: 'notes', query, limit: 20 })
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail ?? `Search failed with status ${res.status}`);
-      }
-
-      const data: SearchHit[] = await res.json();
+      if (!res.ok) throw new Error('Ricerca fallita');
+      const data = await res.json();
       results = data;
+      if (results.length) selectedPdf = results[0];
     } catch (err) {
-      searchError = err instanceof Error ? err.message : 'Unknown error during search.';
+      searchError = err instanceof Error ? err.message : String(err);
     } finally {
       searchLoading = false;
     }
   }
 
-  onMount(() => {
-    // placeholder: could be used later to auto-load example notes
-  });
+  function handleKeyPress(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !searchLoading) runSearch();
+  }
+
+  function selectPdf(hit: SearchHit) {
+    selectedPdf = hit;
+  }
+
+  onMount(() => {});
 </script>
 
 <svelte:head>
-  <title>Semantic search – UseIt</title>
+  <title>Ricerca semantica – UseIt</title>
 </svelte:head>
 
-<main class="page">
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Semantic search for your components &amp; school notes</h1>
-      <p>
-        Store short notes about UI components or school topics, then find them later with natural
-        language search powered by Qdrant.
-      </p>
-    </div>
-  </section>
+<main class="search-page">
+  <header class="search-header">
+    <div class="container">
+      <h1>Cerca nella documentazione</h1>
+      <p class="hint">Usa linguaggio naturale per trovare PDF e documenti rilevanti.</p>
 
-  <section class="grid">
-    <div class="card">
-      <h2>Add a note</h2>
-      <p class="muted">
-        Describe a component or a topic (e.g. “React button component props”, “Derivatives rules
-        summary”).
-      </p>
-
-      <label>
-        <span>Collection</span>
-        <input bind:value={collectionName} placeholder="notes" />
-      </label>
-
-      <label>
-        <span>Title</span>
+      <div class="search-row">
         <input
-          bind:value={noteTitle}
-          placeholder="Primary Button component / Limits chapter overview"
+          class="search-input"
+          type="text"
+          placeholder="Es: specifiche prodotto"
+          bind:value={query}
+          on:keypress={handleKeyPress}
         />
-      </label>
-
-      <label>
-        <span>Type</span>
-        <select bind:value={noteType}>
-          <option value="component">Component</option>
-          <option value="school-note">School note</option>
-          <option value="doc">Doc</option>
-        </select>
-      </label>
-
-      <label>
-        <span>Tags (comma separated)</span>
-        <input bind:value={noteTags} placeholder="ui, button, math, algebra" />
-      </label>
-
-      <label>
-        <span>Content</span>
-        <textarea
-          bind:value={noteContent}
-          rows="6"
-          placeholder="Write a short description; you can include code or formulas."
-        ></textarea>
-      </label>
-
-      <button class="primary" on:click|preventDefault={ingestNote} disabled={ingestLoading}>
-        {ingestLoading ? 'Ingesting…' : 'Save note to Qdrant'}
-      </button>
-
-      {#if ingestMessage}
-        <p class="status success">{ingestMessage}</p>
-      {/if}
-      {#if ingestError}
-        <p class="status error">{ingestError}</p>
-      {/if}
+        <button class="btn primary" on:click={runSearch} disabled={searchLoading}>
+          {searchLoading ? 'Cercando…' : 'Cerca'}
+        </button>
+      </div>
+      {#if searchError}<p class="error">{searchError}</p>{/if}
     </div>
+  </header>
 
-    <div class="card">
-      <h2>Search notes</h2>
-      <p class="muted">
-        Ask questions like “How do I style the primary button?” or “Notes about integrals for
-        tomorrow’s test”.
-      </p>
-
-      <label>
-        <span>Collection</span>
-        <input bind:value={collectionName} placeholder="notes" />
-      </label>
-
-      <label>
-        <span>Query</span>
-        <input bind:value={query} placeholder="Find docs about derivatives and tangent lines" />
-      </label>
-
-      <label>
-        <span>Max results</span>
-        <input
-          type="number"
-          min="1"
-          max="20"
-          bind:value={searchLimit}
-        />
-      </label>
-
-      <button class="primary" on:click|preventDefault={runSearch} disabled={searchLoading}>
-        {searchLoading ? 'Searching…' : 'Search'}
-      </button>
-
-      {#if searchError}
-        <p class="status error">{searchError}</p>
-      {/if}
-
-      {#if results.length}
-        <div class="results">
-          {#each results as hit (hit.id)}
-            <article class="result">
-              <header>
-                <h3>{hit.title}</h3>
-                <span class="score">Score: {hit.score.toFixed(3)}</span>
-              </header>
-              {#if hit.type || (hit.tags && hit.tags.length)}
-                <div class="meta">
-                  {#if hit.type}
-                    <span class="pill">{hit.type}</span>
-                  {/if}
-                  {#each hit.tags as tag}
-                    <span class="pill">{tag}</span>
-                  {/each}
-                </div>
-              {/if}
-              <p class="content">
-                {hit.content}
-              </p>
-            </article>
-          {/each}
+  {#if results.length > 0}
+    <section class="results">
+      <aside class="results-sidebar">
+        <div class="sidebar-inner">
+          <div class="sidebar-title">
+            Risultati <span class="count">{results.length}</span>
+          </div>
+          <div class="list">
+            {#each results as r (r.id)}
+              <button
+                class="item {selectedPdf?.id === r.id ? 'active' : ''}"
+                on:click={() => selectPdf(r)}
+              >
+                <div class="title">{r.title}</div>
+                <div class="meta">{Math.round((r.score || 0) * 100)}%</div>
+              </button>
+            {/each}
+          </div>
         </div>
-      {/if}
-    </div>
-  </section>
+      </aside>
+
+      <div class="preview">
+        {#if selectedPdf}
+          <div class="preview-head">
+            <h2>{selectedPdf.title}</h2>
+            {#if selectedPdf.pdf_path}
+              <a class="external" href={selectedPdf.pdf_path} target="_blank" rel="noopener noreferrer">
+                Apri ↗
+              </a>
+            {/if}
+          </div>
+          <div class="preview-body">
+            <PdfPreview src={selectedPdf.pdf_path ?? null} />
+          </div>
+        {:else}
+          <div class="empty">Seleziona un risultato per vedere l'anteprima</div>
+        {/if}
+      </div>
+    </section>
+  {:else}
+    <section class="empty-state">
+      <div class="container">
+        <p>Nessun risultato — esegui una ricerca.</p>
+      </div>
+    </section>
+  {/if}
 </main>
 
 <style>
-  .page {
-    max-width: 1100px;
+  .search-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f9fafb;
+  }
+
+  .container {
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 1rem;
   }
 
-  .hero {
-    margin-bottom: 2.5rem;
+  .search-header {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
   }
 
-  .hero-text h1 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+  h1 {
+    font-size: 1.25rem;
+    margin: 0 0 0.25rem 0;
   }
 
-  .hero-text p {
+  .hint {
     color: #6b7280;
-    max-width: 40rem;
+    margin: 0 0 0.5rem 0;
   }
 
-  .grid {
-    display: grid;
-    gap: 1.75rem;
+  .search-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
   }
 
-  @media (min-width: 900px) {
-    .grid {
-      grid-template-columns: 1fr 1fr;
-      align-items: flex-start;
-    }
-  }
-
-  .card {
-    background: #ffffff;
-    border-radius: 0.9rem;
-    padding: 1.5rem 1.75rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  .search-input {
+    flex: 1;
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
   }
 
-  .card h2 {
-    margin-bottom: 0.35rem;
-    font-size: 1.25rem;
-  }
-
-  .muted {
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin-bottom: 1.25rem;
-  }
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    margin-bottom: 0.9rem;
-    font-size: 0.9rem;
-  }
-
-  label span {
-    color: #374151;
-    font-weight: 500;
-  }
-
-  input,
-  select,
-  textarea {
-    border-radius: 0.6rem;
-    border: 1px solid #d1d5db;
-    padding: 0.6rem 0.7rem;
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-    background-color: #f9fafb;
-  }
-
-  input:focus,
-  select:focus,
-  textarea:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.4);
-    background-color: #ffffff;
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 140px;
-  }
-
-  button.primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.25rem;
-    padding: 0.55rem 1.3rem;
-    border-radius: 999px;
+  .btn {
+    padding: 0.56rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
     border: none;
-    font-size: 0.95rem;
-    font-weight: 600;
+  }
+
+  .btn.primary {
     background: linear-gradient(135deg, #4f46e5, #6366f1);
     color: white;
-    cursor: pointer;
-    box-shadow: 0 12px 25px rgba(55, 48, 163, 0.45);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
   }
 
-  button.primary:hover:enabled {
-    transform: translateY(-1px);
-    box-shadow: 0 16px 30px rgba(55, 48, 163, 0.55);
-    filter: brightness(1.05);
+  .btn.ghost {
+    background: transparent;
+    border: 1px solid #d1d5db;
   }
 
-  button.primary:disabled {
-    opacity: 0.7;
-    cursor: default;
-    box-shadow: none;
-  }
-
-  .status {
-    margin-top: 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  .status.success {
-    color: #166534;
-  }
-
-  .status.error {
+  .error {
     color: #b91c1c;
+    margin-top: 0.5rem;
   }
 
   .results {
-    margin-top: 1.25rem;
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) 1fr;
+    gap: 1rem;
+    align-items: start;
+    min-height: 0;
+  }
+
+  .results-sidebar {
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    overflow: auto;
+    min-height: 0;
+  }
+
+  .sidebar-inner {
+    padding: 0.75rem;
+  }
+
+  .sidebar-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .count {
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .list {
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
-    max-height: 26rem;
-    overflow-y: auto;
+    gap: 0.4rem;
   }
 
-  .result {
-    padding: 0.85rem 0.75rem;
-    border-radius: 0.7rem;
+  .item {
+    text-align: left;
+    padding: 0.6rem;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-  }
-
-  .result header {
+    background: white;
     display: flex;
-    align-items: baseline;
     justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
+    align-items: center;
+    cursor: pointer;
   }
 
-  .result h3 {
-    font-size: 1rem;
-    margin: 0;
+  .item.active {
+    background: #eef2ff;
+    border-color: #4f46e5;
   }
 
-  .score {
-    font-size: 0.8rem;
-    color: #6b7280;
+  .title {
+    font-size: 0.95rem;
+    font-weight: 600;
   }
 
   .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.3rem;
-  }
-
-  .pill {
-    padding: 0.1rem 0.6rem;
-    border-radius: 999px;
-    background-color: #e0e7ff;
-    color: #4338ca;
     font-size: 0.75rem;
-    font-weight: 500;
+    color: #4f46e5;
   }
 
-  .content {
-    font-size: 0.9rem;
-    color: #374151;
-    white-space: pre-wrap;
+  .preview {
+    background: white;
+    padding: 0.6rem;
+    min-height: 0;
+  }
+
+  .preview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .preview-head h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .external {
+    font-size: 0.75rem;
+    color: #4f46e5;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .preview-body {
+    min-height: 200px;
+  }
+
+  .empty {
+    padding: 2rem;
+    color: #6b7280;
+    text-align: center;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem;
+  }
+
+  .empty-state p {
+    color: #6b7280;
+  }
+
+  @media (max-width: 768px) {
+    .results {
+      grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+    }
+
+    .results-sidebar {
+      border-right: none;
+      border-bottom: 1px solid #e5e7eb;
+      max-height: 260px;
+    }
+
+    .search-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 </style>
-
-

@@ -12,7 +12,6 @@
 <nav class="navbar">
 	<div class="nav-container">
 		<a href="/" class="nav-logo">
-			<span class="logo-icon">📦</span>
 			<span class="logo-text">UseIt</span>
 		</a>
 		<div class="nav-links">
@@ -28,6 +27,41 @@
 </main>
 
 <style>
+	:global(html, body) {
+		height: 100%;
+		width: 100%;
+	}
+
+	:global(body) {
+		display: flex;
+		flex-direction: column;
+		overflow: visible;
+	}
+
+	:global(#svelte) {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		width: 100%;
+	}
+
+	:global(::-webkit-scrollbar) {
+		width: 8px;
+	}
+
+	:global(::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(::-webkit-scrollbar-thumb) {
+		background: #cbd5f5;
+		border-radius: 4px;
+	}
+
+	:global(::-webkit-scrollbar-thumb:hover) {
+		background: #a5b4fc;
+	}
+
 	nav {
 		background: white;
 		border-bottom: 1px solid #e5e7eb;
@@ -35,6 +69,7 @@
 		position: sticky;
 		top: 0;
 		z-index: 100;
+		flex-shrink: 0;
 	}
 
 	.nav-container {
@@ -108,7 +143,12 @@
 	}
 
 	main {
-		min-height: calc(100vh - 60px);
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
 	}
 
 	@media (max-width: 640px) {
