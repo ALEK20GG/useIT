@@ -111,3 +111,37 @@ class SemanticSearchHit(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+# ---- PDF search specific models ----
+
+
+class PDFSearchRequest(BaseModel):
+    """
+    Request body for semantic search in PDF documents.
+    """
+
+    query: str = Field(min_length=1, description="Search query or keywords")
+    collection_name: str = Field(
+        default="pdfs", description="Qdrant collection where PDFs are indexed"
+    )
+    limit: int = Field(
+        default=10, ge=1, le=50, description="Maximum number of PDF files to return"
+    )
+    use_keyword_boost: bool = Field(
+        default=True, description="Boost results that contain exact keyword matches"
+    )
+
+
+class PDFSearchResult(BaseModel):
+    """
+    Response item returned to the frontend for PDF search.
+    Contains unique PDF files that match the search query.
+    """
+
+    filename: str = Field(description="Name of the PDF file")
+    relative_url: str = Field(description="Relative URL path for the frontend (e.g., /pdf-source/file.pdf)")
+    score: float = Field(description="Relevance score (highest score first)")
+    preview_text: str = Field(
+        default="", description="Preview of the matching content"
+    )
+
+

@@ -16,6 +16,10 @@ backend/__pycache__/
 backend/**/*.py[cod]
 backend/.mypy_cache/
 backend/.pytest_cache/
+backend/myvenv/
+# Qdrant storage (local/embedded mode)
+qdrant_local/
+qdrant_storage/
 
 # Environment & secrets
 .env
@@ -37,4 +41,5 @@ Thumbs.db
 .idea/
 *.code-workspace
 
+*.pdf
 
