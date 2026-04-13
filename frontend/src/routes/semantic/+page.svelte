@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { PUBLIC_BACKEND_URL } from '$env/static/public';
 
-  const BACKEND_URL = 'http://127.0.0.1:8000';
+  const BACKEND_URL = PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
 
   type Note = {
     title: string;
@@ -289,7 +290,7 @@
   }
 
   .hero-text p {
-    color: #6b7280;
+    color: var(--color-text-muted);
     max-width: 40rem;
   }
 
@@ -306,11 +307,11 @@
   }
 
   .card {
-    background: #ffffff;
+    background: var(--color-card-bg);
     border-radius: 0.9rem;
     padding: 1.5rem 1.75rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 18px 40px var(--color-shadow);
+    border: 1px solid var(--color-border);
   }
 
   .card h2 {
@@ -320,7 +321,7 @@
 
   .muted {
     font-size: 0.9rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
     margin-bottom: 1.25rem;
   }
 
@@ -333,7 +334,7 @@
   }
 
   label span {
-    color: #374151;
+    color: var(--color-text);
     font-weight: 500;
   }
 
@@ -341,21 +342,22 @@
   select,
   textarea {
     border-radius: 0.6rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border);
     padding: 0.6rem 0.7rem;
     font-size: 0.95rem;
     font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-    background-color: #f9fafb;
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
   }
 
   input:focus,
   select:focus,
   textarea:focus {
     outline: none;
-    border-color: #4f46e5;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.4);
-    background-color: #ffffff;
+    background-color: var(--color-card-bg);
   }
 
   textarea {
@@ -398,11 +400,11 @@
   }
 
   .status.success {
-    color: #166534;
+    color: var(--color-success-text);
   }
 
   .status.error {
-    color: #b91c1c;
+    color: var(--color-error-text);
   }
 
   .results {
@@ -417,8 +419,8 @@
   .result {
     padding: 0.85rem 0.75rem;
     border-radius: 0.7rem;
-    border: 1px solid #e5e7eb;
-    background-color: #f9fafb;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg-secondary);
   }
 
   .result header {
@@ -436,7 +438,7 @@
 
   .score {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
   }
 
   .meta {
@@ -457,7 +459,7 @@
 
   .content {
     font-size: 0.9rem;
-    color: #374151;
+    color: var(--color-text);
     white-space: pre-wrap;
   }
 </style>

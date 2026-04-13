@@ -129,6 +129,12 @@ class PDFSearchRequest(BaseModel):
     use_keyword_boost: bool = Field(
         default=True, description="Boost results that contain exact keyword matches"
     )
+    filename_filter: str | None = Field(
+        default=None, description="Optional filename substring filter"
+    )
+    offset: int = Field(
+        default=0, ge=0, description="Number of results to skip for pagination"
+    )
 
 
 class PDFSearchResult(BaseModel):
@@ -143,5 +149,26 @@ class PDFSearchResult(BaseModel):
     preview_text: str = Field(
         default="", description="Preview of the matching content"
     )
+    page_number: int | None = Field(
+        default=None, description="1-based page number of the matching chunk"
+    )
+
+
+class PDFSearchResponse(BaseModel):
+    """Paginated response for PDF search."""
+
+    results: list[PDFSearchResult]
+    total: int = Field(description="Total number of unique matching PDFs before pagination")
+    offset: int = Field(description="Current offset")
+    limit: int = Field(description="Current limit")
+
+
+class IndexedPDF(BaseModel):
+    """Metadata for an indexed PDF document."""
+
+    filename: str
+    relative_url: str
+    chunk_count: int
+    indexed_at: str = Field(description="ISO-8601 UTC timestamp of when the PDF was indexed")
 
 

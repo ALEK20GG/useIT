@@ -1,5 +1,6 @@
 <script lang="ts">
-  const BACKEND_URL = 'http://127.0.0.1:8000';
+  import { PUBLIC_BACKEND_URL } from '$env/static/public';
+  const BACKEND_URL = PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
 
   let selectedFile: File | null = null;
   let previewUrl: string | null = null;
@@ -186,7 +187,7 @@
   }
 
   .hero-text p {
-    color: #6b7280;
+    color: var(--color-text-muted);
     max-width: 38rem;
   }
 
@@ -203,7 +204,7 @@
   }
 
   .dropzone {
-    background: #f9fafb;
+    background: var(--color-bg-secondary);
     border-radius: 1rem;
     padding: 1.25rem;
     border: 2px dashed #cbd5f5;
@@ -247,7 +248,7 @@
   .instructions .hint {
     margin-top: 0.75rem;
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
   }
 
   .button {
@@ -281,26 +282,27 @@
   }
 
   .button.secondary {
-    background-color: #111827;
-    color: white;
+    background-color: var(--color-text);
+    color: var(--color-bg);
   }
 
   .button.secondary:hover {
-    background-color: #020617;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text);
   }
 
   .button.ghost {
     background-color: transparent;
-    color: #111827;
-    border: 1px solid #d1d5db;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
   }
 
   .side-card {
-    background: #ffffff;
+    background: var(--color-card-bg);
     border-radius: 1rem;
     padding: 1.5rem 1.5rem 1.75rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 18px 40px var(--color-shadow);
+    border: 1px solid var(--color-border);
   }
 
   .side-card h2 {
@@ -310,7 +312,7 @@
 
   .muted {
     font-size: 0.9rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
     margin-bottom: 1rem;
   }
 
@@ -320,7 +322,7 @@
   }
 
   .status.error {
-    color: #b91c1c;
+    color: var(--color-error-text);
   }
 
   .analysis-box {

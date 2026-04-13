@@ -13,10 +13,13 @@ frontend/.vite/
 # Python (backend)
 backend/.venv/
 backend/__pycache__/
+backend/app/__pycache__/
+backend/**/__pycache__/
 backend/**/*.py[cod]
 backend/.mypy_cache/
 backend/.pytest_cache/
 backend/myvenv/
+
 # Qdrant storage (local/embedded mode)
 qdrant_local/
 qdrant_storage/
@@ -24,9 +27,14 @@ qdrant_storage/
 # Environment & secrets
 .env
 */.env
+frontend/.env
 backend/env.local
 backend/.env.*
 backend/env.*
+
+# PDF files (large binary assets — use downloadpdf.py to regenerate)
+*.pdf
+frontend/static/pdf-source/
 
 # OS / editor junk
 *.log
@@ -40,6 +48,3 @@ Thumbs.db
 .vscode/
 .idea/
 *.code-workspace
-
-*.pdf
-

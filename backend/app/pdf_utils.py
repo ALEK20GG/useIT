@@ -6,7 +6,6 @@ import os
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import List
 
 import PyPDF2
 
@@ -67,17 +66,21 @@ def clean_extracted_text(text: str) -> str:
     return text.strip()
 
 
-def extract_text_from_pdf(file_content: bytes) -> str:
+def extract_text_from_pdf(file_content: bytes) -> list[tuple[int, str]]:
     """
-    Extract text content from a PDF file.
+    Extract text content from a PDF file, returning per-page tuples.
     
     Args:
         file_content: The PDF file bytes
         
     Returns:
-        The extracted text from all pages (cleaned and normalized)
+        A list of (page_number, page_text) tuples (1-based page numbers).
+        Pages with no extractable text are skipped.
+        
+    Raises:
+        ValueError: If no pages have extractable text or the PDF cannot be read.
     """
-    text_parts: List[str] = []
+    pages: list[tuple[int, str]] = []
     
     try:
         # PyPDF2 needs a file-like object, so we wrap bytes in BytesIO
@@ -90,72 +93,100 @@ def extract_text_from_pdf(file_content: bytes) -> str:
             try:
                 text = page.extract_text()
                 if text and text.strip():
-                    # Clean the extracted text
                     cleaned_text = clean_extracted_text(text)
                     if cleaned_text:
-                        text_parts.append(cleaned_text)
+                        pages.append((page_num, cleaned_text))
             except Exception as e:
                 # Log but continue with other pages
                 print(f"  Warning: Error extracting text from page {page_num}: {e}")
                 continue
         
-        if not text_parts:
+        if not pages:
             raise ValueError("No text could be extracted from any page")
             
+    except ValueError:
+        raise
     except Exception as e:
         raise ValueError(f"Failed to read PDF: {e}") from e
     
-    # Join pages with double newline (paragraph separator)
-    full_text = "\n\n".join(text_parts)
+    total_chars = sum(len(text) for _, text in pages)
+    print(f"  Extracted {total_chars} characters of text across {len(pages)} pages")
     
-    if not full_text.strip():
-        raise ValueError("PDF contains no extractable text after cleaning")
-    
-    print(f"  Extracted {len(full_text)} characters of text")
-    
-    return full_text
+    return pages
 
 
-def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[str]:
     """
-    Split text into overlapping chunks for embedding.
-    
-    Args:
-        text: The text to chunk
-        chunk_size: Maximum size of each chunk (in characters)
-        overlap: Number of characters to overlap between chunks
-        
-    Returns:
-        List of text chunks
+    Split text into overlapping chunks, preferring natural boundaries.
+
+    Priority: paragraph boundary (\\n\\n) > sentence boundary (. ! ?) > whitespace > hard split
+    Chunks shorter than 100 chars are merged into the previous chunk (except the last).
     """
-    if len(text) <= chunk_size:
-        return [text]
-    
-    chunks: List[str] = []
+    if not text or not text.strip():
+        return []
+
+    text = text.strip()
+    chunks = []
     start = 0
-    
+
     while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        
-        # Try to break at a sentence boundary if possible
+        end = min(start + chunk_size, len(text))
+
         if end < len(text):
-            # Look for sentence endings in the last 100 chars
-            last_period = chunk.rfind('.')
-            last_newline = chunk.rfind('\n')
-            break_point = max(last_period, last_newline)
-            
-            if break_point > chunk_size - 200:  # If we find a good break point
-                chunk = chunk[:break_point + 1]
-                end = start + break_point + 1
-        
-        chunks.append(chunk.strip())
-        start = end - overlap  # Overlap with next chunk
-    
+            # Look for a split point in the last 200 chars of the window
+            window_start = max(start, end - 200)
+            window = text[window_start:end]
+
+            split_offset = None
+
+            # 1. Try paragraph boundary (\n\n)
+            idx = window.rfind('\n\n')
+            if idx != -1:
+                split_offset = window_start + idx + 2  # after the \n\n
+
+            # 2. Try sentence boundary (. ! ? followed by space or end)
+            if split_offset is None:
+                matches = list(re.finditer(r'[.!?](?:\s|$)', window))
+                if matches:
+                    last_match = matches[-1]
+                    split_offset = window_start + last_match.end()
+
+            # 3. Try whitespace
+            if split_offset is None:
+                idx = window.rfind(' ')
+                if idx != -1:
+                    split_offset = window_start + idx + 1
+
+            # 4. Hard split
+            if split_offset is None or split_offset <= start:
+                split_offset = end
+
+            chunk = text[start:split_offset].strip()
+            if chunk:
+                chunks.append(chunk)
+            start = max(start + 1, split_offset - overlap)
+        else:
+            # Last chunk
+            chunk = text[start:end].strip()
+            if chunk:
+                chunks.append(chunk)
+            break
+
+    # Merge chunks shorter than 100 chars into the previous chunk (except the last)
+    if len(chunks) > 1:
+        merged = [chunks[0]]
+        for i in range(1, len(chunks) - 1):
+            if len(chunks[i]) < 100:
+                merged[-1] = merged[-1] + ' ' + chunks[i]
+            else:
+                merged.append(chunks[i])
+        merged.append(chunks[-1])  # always keep the last chunk
+        chunks = merged
+
     return chunks
 
 
-def extract_text_from_pdf_file(file_path: Path | str) -> str:
+def extract_text_from_pdf_file(file_path: Path | str) -> list[tuple[int, str]]:
     """
     Extract text content from a PDF file on disk.
     
@@ -163,7 +194,7 @@ def extract_text_from_pdf_file(file_path: Path | str) -> str:
         file_path: Path to the PDF file
         
     Returns:
-        The extracted text from all pages
+        A list of (page_number, page_text) tuples (1-based page numbers).
     """
     pdf_path = Path(file_path)
     if not pdf_path.exists():

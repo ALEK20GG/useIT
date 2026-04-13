@@ -5,22 +5,26 @@ FastAPI application exposing a light wrapper over Qdrant.
 import hashlib
 import os
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
 
+from .config import get_settings
 from .dependencies import get_qdrant_client
 from .embeddings import embed_text_batch
 from .pdf_utils import chunk_text, extract_text_from_pdf, extract_text_from_pdf_file, save_pdf
 from .schemas import (
     CreateCollectionRequest,
+    IndexedPDF,
     IngestNotesRequest,
     PDFSearchRequest,
     PDFSearchResult,
+    PDFSearchResponse,
     SearchRequest,
     SearchResult,
     SemanticSearchHit,
@@ -37,10 +41,7 @@ app = FastAPI(
 # Allow the SvelteKit dev server to talk to this API during development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=get_settings().cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,7 +86,11 @@ def create_collection(
 ) -> dict[str, str]:
     """Create (or recreate) a Qdrant collection with the provided vector config."""
 
-    client.recreate_collection(
+    try:
+        client.delete_collection(collection_name=payload.name)
+    except Exception:
+        pass
+    client.create_collection(
         collection_name=payload.name,
         vectors_config=VectorParams(
             size=payload.vector_size, distance=_distance_from_label(payload.distance)
@@ -158,10 +163,23 @@ def ingest_notes(
     vector_size = len(vectors[0])
 
     # 2) Ensure collection exists with the embedding model's vector size
-    client.recreate_collection(
-        collection_name=body.collection_name,
-        vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
-    )
+    try:
+        collection_info = client.get_collection(body.collection_name)
+        existing_size = collection_info.config.params.vectors.size
+        if existing_size != vector_size:
+            # Vector size mismatch — recreate
+            client.delete_collection(collection_name=body.collection_name)
+            client.create_collection(
+                collection_name=body.collection_name,
+                vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+            )
+        # else: collection exists with correct size — keep existing data, just upsert
+    except Exception:
+        # Collection doesn't exist — create it
+        client.create_collection(
+            collection_name=body.collection_name,
+            vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+        )
 
     # 3) Prepare points
     points: list[PointStruct] = []
@@ -271,39 +289,45 @@ async def upload_pdf(
         file_path = save_pdf(file_content, file.filename, str(PDFS_DIR))
         filename = Path(file_path).name
         
-        # 3) Extract text from PDF
+        # 3) Extract text from PDF (per-page)
         try:
-            full_text = extract_text_from_pdf(file_content)
+            pages = extract_text_from_pdf(file_content)
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to extract text from PDF: {e}",
             ) from e
-        
-        # 4) Split text into chunks
-        text_chunks = chunk_text(full_text, chunk_size=1000, overlap=200)
-        
-        if not text_chunks:
+
+        # 4) Chunk per page, tagging each chunk with its page number
+        indexed_at = datetime.now(timezone.utc).isoformat()
+        all_chunks: list[tuple[int, str]] = []  # (page_number, chunk_text)
+        for page_number, page_text in pages:
+            page_chunks = chunk_text(page_text, chunk_size=1000, overlap=200)
+            for chunk in page_chunks:
+                all_chunks.append((page_number, chunk))
+
+        if not all_chunks:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="PDF contains no extractable text",
             )
-        
-        # 5) Generate embeddings for chunks
+
+        # 5) Generate embeddings for all chunks
+        text_chunks = [chunk for _, chunk in all_chunks]
         vectors = embed_text_batch(text_chunks)
         if not vectors:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to generate embeddings",
             )
-        
+
         # Ensure text_chunks and vectors have the same length
         if len(text_chunks) != len(vectors):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Mismatch between chunks ({len(text_chunks)}) and vectors ({len(vectors)})",
             )
-        
+
         vector_size = len(vectors[0])
         
         # 6) Ensure collection exists with the embedding model's vector size
@@ -311,7 +335,11 @@ async def upload_pdf(
             collection_info = client.get_collection(PDF_COLLECTION)
             if collection_info.config.params.vectors.size != vector_size:
                 # Recreate if size doesn't match
-                client.recreate_collection(
+                try:
+                    client.delete_collection(collection_name=PDF_COLLECTION)
+                except Exception:
+                    pass
+                client.create_collection(
                     collection_name=PDF_COLLECTION,
                     vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
                 )
@@ -327,22 +355,21 @@ async def upload_pdf(
         relative_url = f"/pdf-source/{filename}"
         points: list[PointStruct] = []
         
-        for chunk_idx in range(len(text_chunks)):
-            chunk_text = text_chunks[chunk_idx]
+        for chunk_idx, (page_number, chunk_text_content) in enumerate(all_chunks):
             vector = vectors[chunk_idx]
             # Create deterministic UUID based on filename and chunk index
-            # This ensures the same PDF always gets the same IDs
-            # Convert to string for Qdrant compatibility
             unique_name = f"{filename}:{chunk_idx}"
             point_id = str(uuid.uuid5(PDF_NAMESPACE, unique_name))
             
             payload = {
                 "filename": filename,
                 "file_path": file_path,
-                "relative_url": relative_url,  # URL relativo per il frontend
+                "relative_url": relative_url,
                 "chunk_index": chunk_idx,
-                "chunk_text": chunk_text[:500],  # Store preview of chunk
-                "total_chunks": len(text_chunks),
+                "chunk_text": chunk_text_content[:500],
+                "total_chunks": len(all_chunks),
+                "page_number": page_number,
+                "indexed_at": indexed_at,
             }
             
             points.append(
@@ -418,7 +445,11 @@ async def index_all_pdfs(
         try:
             collection_info = client.get_collection(PDF_COLLECTION)
             if collection_info.config.params.vectors.size != vector_size:
-                client.recreate_collection(
+                try:
+                    client.delete_collection(collection_name=PDF_COLLECTION)
+                except Exception:
+                    pass
+                client.create_collection(
                     collection_name=PDF_COLLECTION,
                     vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
                 )
@@ -443,19 +474,25 @@ async def index_all_pdfs(
             try:
                 print(f"Processing PDF: {filename}")
                 
-                # Extract text
-                full_text = extract_text_from_pdf_file(pdf_file)
-                
-                # Split into chunks
-                text_chunks = chunk_text(full_text, chunk_size=1000, overlap=200)
-                
-                if not text_chunks:
+                # Extract text per page
+                pages = extract_text_from_pdf_file(pdf_file)
+
+                # Chunk per page, tagging each chunk with its page number
+                indexed_at = datetime.now(timezone.utc).isoformat()
+                all_chunks: list[tuple[int, str]] = []
+                for page_number, page_text in pages:
+                    page_chunks = chunk_text(page_text, chunk_size=1000, overlap=200)
+                    for chunk in page_chunks:
+                        all_chunks.append((page_number, chunk))
+
+                if not all_chunks:
                     errors.append(f"{filename}: No extractable text")
                     continue
-                
-                print(f"  Extracted {len(text_chunks)} chunks")
-                
+
+                print(f"  Extracted {len(all_chunks)} chunks")
+
                 # Generate embeddings
+                text_chunks = [chunk for _, chunk in all_chunks]
                 vectors = embed_text_batch(text_chunks)
                 
                 if not vectors:
@@ -472,12 +509,10 @@ async def index_all_pdfs(
                 # Prepare points
                 points: list[PointStruct] = []
                 
-                for chunk_idx in range(len(text_chunks)):
-                    chunk_text_content = text_chunks[chunk_idx]
+                for chunk_idx, (page_number, chunk_text_content) in enumerate(all_chunks):
                     vector = vectors[chunk_idx]
                     
                     # Create deterministic UUID based on filename and chunk index
-                    # Convert to string for Qdrant compatibility
                     unique_name = f"{filename}:{chunk_idx}"
                     point_id = str(uuid.uuid5(PDF_NAMESPACE, unique_name))
                     
@@ -487,7 +522,9 @@ async def index_all_pdfs(
                         "relative_url": relative_url,
                         "chunk_index": chunk_idx,
                         "chunk_text": chunk_text_content[:500],
-                        "total_chunks": len(text_chunks),
+                        "total_chunks": len(all_chunks),
+                        "page_number": page_number,
+                        "indexed_at": indexed_at,
                     }
                     
                     points.append(
@@ -567,11 +604,227 @@ def calculate_keyword_boost(query: str, text: str) -> float:
     return min(match_ratio * 0.3, 0.3)
 
 
-@app.post("/pdf/search", response_model=list[PDFSearchResult])
+@app.get("/pdf/list", response_model=list[IndexedPDF])
+async def list_pdfs(
+    client: QdrantClient = Depends(get_qdrant_client),
+) -> list[IndexedPDF]:
+    """List all indexed PDFs with metadata."""
+    try:
+        # Scroll all points from the collection
+        all_points = []
+        offset = None
+        while True:
+            result, next_offset = client.scroll(
+                collection_name=PDF_COLLECTION,
+                limit=100,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            all_points.extend(result)
+            if next_offset is None:
+                break
+            offset = next_offset
+
+        if not all_points:
+            return []
+
+        # Group by filename
+        pdf_map: dict[str, dict] = {}
+        for point in all_points:
+            payload = point.payload or {}
+            filename = payload.get("filename", "")
+            if not filename:
+                continue
+            if filename not in pdf_map:
+                pdf_map[filename] = {
+                    "filename": filename,
+                    "relative_url": payload.get("relative_url", f"/pdf-source/{filename}"),
+                    "chunk_count": 0,
+                    "indexed_at": payload.get("indexed_at", ""),
+                }
+            pdf_map[filename]["chunk_count"] += 1
+
+        return [
+            IndexedPDF(
+                filename=info["filename"],
+                relative_url=info["relative_url"],
+                chunk_count=info["chunk_count"],
+                indexed_at=info["indexed_at"],
+            )
+            for info in sorted(pdf_map.values(), key=lambda x: x["filename"])
+        ]
+
+    except Exception as e:
+        # If collection doesn't exist, return empty list
+        if "not found" in str(e).lower() or "doesn't exist" in str(e).lower():
+            return []
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error listing PDFs: {str(e)}",
+        ) from e
+
+
+@app.delete("/pdf/{filename}", status_code=status.HTTP_200_OK)
+async def delete_pdf(
+    filename: str,
+    client: QdrantClient = Depends(get_qdrant_client),
+) -> dict[str, str]:
+    """Delete a PDF and all its indexed vectors."""
+    # Check if any points exist for this filename
+    has_points = False
+    try:
+        results, _ = client.scroll(
+            collection_name=PDF_COLLECTION,
+            scroll_filter=Filter(
+                must=[FieldCondition(key="filename", match=MatchValue(value=filename))]
+            ),
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        )
+        has_points = len(results) > 0
+    except Exception:
+        pass
+
+    # Check if file exists on disk
+    file_path = PDFS_DIR / filename
+    has_file = file_path.exists()
+
+    if not has_points and not has_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No indexed points or file found for '{filename}'",
+        )
+
+    # Delete Qdrant points
+    if has_points:
+        try:
+            client.delete(
+                collection_name=PDF_COLLECTION,
+                points_selector=Filter(
+                    must=[FieldCondition(key="filename", match=MatchValue(value=filename))]
+                ),
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete indexed points: {str(e)}",
+            ) from e
+
+    # Delete file from disk
+    if has_file:
+        file_path.unlink()
+
+    return {"message": f"PDF '{filename}' deleted successfully"}
+
+
+@app.post("/pdf/reindex/{filename}", status_code=status.HTTP_200_OK)
+async def reindex_pdf(
+    filename: str,
+    client: QdrantClient = Depends(get_qdrant_client),
+) -> dict[str, str]:
+    """Re-index a single PDF: delete existing points and re-extract/re-embed."""
+    file_path = PDFS_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File not found in pdf-source: '{filename}'",
+        )
+
+    try:
+        # 1) Delete existing Qdrant points for this filename
+        try:
+            client.delete(
+                collection_name=PDF_COLLECTION,
+                points_selector=Filter(
+                    must=[FieldCondition(key="filename", match=MatchValue(value=filename))]
+                ),
+            )
+        except Exception:
+            pass  # Collection may not exist yet
+
+        # 2) Re-extract text per page
+        pages = extract_text_from_pdf_file(file_path)
+
+        # 3) Chunk per page
+        indexed_at = datetime.now(timezone.utc).isoformat()
+        relative_url = f"/pdf-source/{filename}"
+        all_chunks: list[tuple[int, str]] = []
+        for page_number, page_text in pages:
+            page_chunks = chunk_text(page_text, chunk_size=1000, overlap=200)
+            for chunk in page_chunks:
+                all_chunks.append((page_number, chunk))
+
+        if not all_chunks:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="PDF contains no extractable text",
+            )
+
+        # 4) Generate embeddings
+        text_chunks = [chunk for _, chunk in all_chunks]
+        vectors = embed_text_batch(text_chunks)
+        vector_size = len(vectors[0])
+
+        # 5) Ensure collection exists
+        try:
+            collection_info = client.get_collection(PDF_COLLECTION)
+            if collection_info.config.params.vectors.size != vector_size:
+                try:
+                    client.delete_collection(collection_name=PDF_COLLECTION)
+                except Exception:
+                    pass
+                client.create_collection(
+                    collection_name=PDF_COLLECTION,
+                    vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+                )
+        except Exception:
+            client.create_collection(
+                collection_name=PDF_COLLECTION,
+                vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+            )
+
+        # 6) Upsert new points
+        points: list[PointStruct] = []
+        for chunk_idx, (page_number, chunk_text_content) in enumerate(all_chunks):
+            vector = vectors[chunk_idx]
+            unique_name = f"{filename}:{chunk_idx}"
+            point_id = str(uuid.uuid5(PDF_NAMESPACE, unique_name))
+            payload = {
+                "filename": filename,
+                "file_path": str(file_path.absolute()),
+                "relative_url": relative_url,
+                "chunk_index": chunk_idx,
+                "chunk_text": chunk_text_content[:500],
+                "total_chunks": len(all_chunks),
+                "page_number": page_number,
+                "indexed_at": indexed_at,
+            }
+            points.append(PointStruct(id=point_id, vector=vector, payload=payload))
+
+        client.upsert(collection_name=PDF_COLLECTION, points=points)
+
+        return {
+            "message": f"PDF '{filename}' re-indexed successfully",
+            "chunks_indexed": len(points),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error re-indexing PDF: {str(e)}",
+        ) from e
+
+
+@app.post("/pdf/search", response_model=PDFSearchResponse)
 async def search_pdfs(
     body: PDFSearchRequest,
     client: QdrantClient = Depends(get_qdrant_client),
-) -> list[PDFSearchResult]:
+) -> PDFSearchResponse:
     """
     Perform hybrid search (semantic + keyword) across indexed PDF documents.
 
@@ -597,7 +850,7 @@ async def search_pdfs(
         )
         
         if not hits:
-            return []
+            return PDFSearchResponse(results=[], total=0, offset=body.offset, limit=body.limit)
         
         # 3) Group hits by filename, apply keyword boost, and keep best match
         pdf_map: dict[str, dict] = {}
@@ -606,7 +859,7 @@ async def search_pdfs(
             payload = hit.payload or {}
             filename = payload.get("filename", "")
             relative_url = payload.get("relative_url", f"/pdf-source/{filename}")
-            chunk_text = payload.get("chunk_text", "")
+            chunk_text_content = payload.get("chunk_text", "")
             
             if not filename:
                 continue
@@ -615,39 +868,58 @@ async def search_pdfs(
             semantic_score = normalize_cosine_score(hit.score)
             
             # Apply keyword boost if enabled
+            keyword_boost = 0.0
             final_score = semantic_score
             if body.use_keyword_boost:
-                keyword_boost = calculate_keyword_boost(body.query, chunk_text)
+                keyword_boost = calculate_keyword_boost(body.query, chunk_text_content)
                 # Combine semantic score with keyword boost (additive, capped at 1.0)
                 final_score = min(semantic_score + keyword_boost, 1.0)
             
             # Keep the highest scoring chunk for each PDF
+            page_number = payload.get("page_number")
             if filename not in pdf_map or final_score > pdf_map[filename]["score"]:
                 pdf_map[filename] = {
                     "filename": filename,
                     "relative_url": relative_url,
                     "score": final_score,
-                    "preview_text": chunk_text[:200],
+                    "preview_text": chunk_text_content[:500],
                     "semantic_score": semantic_score,
-                    "keyword_boost": keyword_boost if body.use_keyword_boost else 0.0,
+                    "keyword_boost": keyword_boost,
+                    "page_number": page_number,
                 }
         
-        # 4) Convert to response model, sorted by score (highest first)
-        results = sorted(
+        # Apply filename filter if provided
+        if body.filename_filter:
+            filter_lower = body.filename_filter.lower()
+            pdf_map = {
+                k: v for k, v in pdf_map.items()
+                if filter_lower in k.lower()
+            }
+
+        # 4) Sort by score, apply filename filter, then paginate
+        all_sorted = sorted(
             pdf_map.values(),
             key=lambda x: x["score"],
             reverse=True,
-        )[:body.limit]
-        
-        return [
-            PDFSearchResult(
-                filename=result["filename"],
-                relative_url=result["relative_url"],
-                score=result["score"],
-                preview_text=result["preview_text"],
-            )
-            for result in results
-        ]
+        )
+        total = len(all_sorted)
+        paginated = all_sorted[body.offset : body.offset + body.limit]
+
+        return PDFSearchResponse(
+            results=[
+                PDFSearchResult(
+                    filename=result["filename"],
+                    relative_url=result["relative_url"],
+                    score=result["score"],
+                    preview_text=result["preview_text"],
+                    page_number=result.get("page_number"),
+                )
+                for result in paginated
+            ],
+            total=total,
+            offset=body.offset,
+            limit=body.limit,
+        )
         
     except Exception as e:
         raise HTTPException(

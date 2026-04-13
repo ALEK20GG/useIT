@@ -1,6 +1,7 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/stores';
+	import HealthIndicator from '$lib/HealthIndicator.svelte';
 
 	let { children } = $props();
 </script>
@@ -20,6 +21,7 @@
 			<a href="/analyze" class="nav-link" class:active={$page.url.pathname === '/analyze'}>Scansiona</a>
 			<a href="/semantic" class="nav-link" class:active={$page.url.pathname === '/semantic'}>Cerca</a>
 			<a href="/pdf" class="nav-link" class:active={$page.url.pathname === '/pdf'}>PDF</a>
+			<HealthIndicator />
 		</div>
 	</div>
 </nav>
@@ -29,10 +31,50 @@
 </main>
 
 <style>
+	:global(:root) {
+		--color-bg: #ffffff;
+		--color-bg-secondary: #f9fafb;
+		--color-text: #111827;
+		--color-text-muted: #6b7280;
+		--color-border: #e5e7eb;
+		--color-shadow: rgba(0, 0, 0, 0.1);
+		--color-primary: #4f46e5;
+		--color-primary-hover: #4338ca;
+		--color-success-bg: #d1fae5;
+		--color-success-text: #065f46;
+		--color-success-border: #a7f3d0;
+		--color-error-bg: #fee2e2;
+		--color-error-text: #991b1b;
+		--color-error-border: #fecaca;
+		--color-card-bg: #ffffff;
+		--color-input-bg: #f9fafb;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(:root) {
+			--color-bg: #111827;
+			--color-bg-secondary: #1f2937;
+			--color-text: #f9fafb;
+			--color-text-muted: #9ca3af;
+			--color-border: #374151;
+			--color-shadow: rgba(0, 0, 0, 0.4);
+			--color-primary: #818cf8;
+			--color-primary-hover: #6366f1;
+			--color-success-bg: #064e3b;
+			--color-success-text: #6ee7b7;
+			--color-success-border: #065f46;
+			--color-error-bg: #7f1d1d;
+			--color-error-text: #fca5a5;
+			--color-error-border: #991b1b;
+			--color-card-bg: #1f2937;
+			--color-input-bg: #374151;
+		}
+	}
+
 	nav {
-		background: white;
-		border-bottom: 1px solid #e5e7eb;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		background: var(--color-bg);
+		border-bottom: 1px solid var(--color-border);
+		box-shadow: 0 1px 3px var(--color-shadow);
 		position: sticky;
 		top: 0;
 		z-index: 100;
@@ -52,7 +94,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		text-decoration: none;
-		color: #111827;
+		color: var(--color-text);
 		font-weight: 700;
 		font-size: 1.25rem;
 		transition: opacity 0.2s ease;
@@ -81,7 +123,7 @@
 
 	.nav-link {
 		text-decoration: none;
-		color: #6b7280;
+		color: var(--color-text-muted);
 		font-weight: 500;
 		font-size: 0.95rem;
 		padding: 0.5rem 0;
@@ -110,6 +152,7 @@
 
 	main {
 		min-height: calc(100vh - 60px);
+		background: var(--color-bg);
 	}
 
 	@media (max-width: 640px) {

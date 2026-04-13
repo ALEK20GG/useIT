@@ -1,0 +1,4 @@
+# file: E:\source\useIT\backend\myvenv\Lib\site-packages\anyio\_core\_eventloop.py
+# hypothesis_version: 6.151.13
+
+['PosArgsT', 'T_Retval', 'asyncio', 'trio']

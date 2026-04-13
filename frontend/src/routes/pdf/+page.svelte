@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { PUBLIC_BACKEND_URL } from '$env/static/public';
+	import { sanitizeHtml } from '$lib/sanitize';
 
-	const BACKEND_URL = 'http://127.0.0.1:8000';
+	const BACKEND_URL = PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
 
 	// Upload state
 	let selectedFile: File | null = null;
@@ -11,15 +13,30 @@
 	let uploadError = '';
 
 	// Search state
-	let searchQuery = '';
-	let searchLoading = false;
-	let searchError = '';
-	let searchResults: Array<{
+	interface PDFSearchResult {
 		filename: string;
 		relative_url: string;
 		score: number;
 		preview_text: string;
-	}> = [];
+		page_number: number | null;
+	}
+
+	interface PDFSearchResponse {
+		results: PDFSearchResult[];
+		total: number;
+		offset: number;
+		limit: number;
+	}
+
+	let searchQuery = '';
+	let searchLoading = false;
+	let searchError = '';
+	let searchResults: PDFSearchResult[] = [];
+	let searchTotal = 0;
+	let searchOffset = 0;
+	let searchLimit = 20;
+	let filenameFilter = '';
+	let deletingResultFiles = new Set<string>();
 
 	// Index all state
 	let indexLoading = false;
@@ -32,6 +49,65 @@
 
 	// Tab state
 	let currentTab = 'upload';
+
+	// Library state
+	interface IndexedPDF {
+		filename: string;
+		relative_url: string;
+		chunk_count: number;
+		indexed_at: string;
+	}
+
+	let libraryPdfs: IndexedPDF[] = [];
+	let libraryLoading = false;
+	let libraryError = '';
+	let reindexingFiles = new Set<string>();
+	let deletingFiles = new Set<string>();
+
+	async function loadLibrary() {
+		libraryLoading = true;
+		libraryError = '';
+		try {
+			const res = await fetch(`${BACKEND_URL}/pdf/list`);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			libraryPdfs = await res.json();
+		} catch (err) {
+			libraryError = err instanceof Error ? err.message : 'Errore nel caricamento della libreria.';
+		} finally {
+			libraryLoading = false;
+		}
+	}
+
+	async function reindexPdf(filename: string) {
+		reindexingFiles = new Set([...reindexingFiles, filename]);
+		try {
+			const res = await fetch(`${BACKEND_URL}/pdf/reindex/${encodeURIComponent(filename)}`, { method: 'POST' });
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			await loadLibrary();
+		} catch (err) {
+			libraryError = err instanceof Error ? err.message : 'Errore durante la re-indicizzazione.';
+		} finally {
+			reindexingFiles = new Set([...reindexingFiles].filter(f => f !== filename));
+		}
+	}
+
+	async function deleteFromLibrary(filename: string) {
+		deletingFiles = new Set([...deletingFiles, filename]);
+		try {
+			const res = await fetch(`${BACKEND_URL}/pdf/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			libraryPdfs = libraryPdfs.filter(p => p.filename !== filename);
+		} catch (err) {
+			libraryError = err instanceof Error ? err.message : "Errore durante l'eliminazione.";
+		} finally {
+			deletingFiles = new Set([...deletingFiles].filter(f => f !== filename));
+		}
+	}
+
+	function switchTab(tab: string) {
+		currentTab = tab;
+		if (tab === 'library') loadLibrary();
+	}
 
 	function onFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -161,9 +237,23 @@
 		}
 	}
 
-	async function searchPDFs() {
+
+	function highlightQuery(text: string, query: string): string {
+		const sanitized = sanitizeHtml(text);
+		if (!query.trim()) return sanitized;
+		const words = query.trim().split(/\s+/).filter(Boolean);
+		let result = sanitized;
+		for (const word of words) {
+			const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			result = result.replace(new RegExp(escaped, 'gi'), (match) => `<mark>${match}</mark>`);
+		}
+		return result;
+	}
+
+	async function searchPDFs(newOffset = 0) {
 		searchError = '';
 		searchResults = [];
+		searchOffset = newOffset;
 
 		if (!searchQuery.trim()) {
 			searchError = 'Per favore inserisci una query di ricerca.';
@@ -172,17 +262,17 @@
 
 		searchLoading = true;
 		try {
-			const body = {
+			const body: Record<string, unknown> = {
 				query: searchQuery,
 				collection_name: 'pdfs',
-				limit: 20
+				limit: searchLimit,
+				offset: searchOffset
 			};
+			if (filenameFilter) body.filename_filter = filenameFilter;
 
 			const res = await fetch(`${BACKEND_URL}/pdf/search`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(body)
 			});
 
@@ -191,16 +281,31 @@
 				throw new Error(data.detail ?? `Errore durante la ricerca (status ${res.status})`);
 			}
 
-			const data = await res.json();
-			searchResults = data;
+			const data: PDFSearchResponse = await res.json();
+			searchResults = data.results;
+			searchTotal = data.total;
 
-			if (data.length === 0) {
+			if (data.results.length === 0) {
 				searchError = 'Nessun PDF trovato per questa query.';
 			}
 		} catch (err) {
 			searchError = err instanceof Error ? err.message : 'Si è verificato un errore durante la ricerca.';
 		} finally {
 			searchLoading = false;
+		}
+	}
+
+	async function deleteSearchResult(filename: string) {
+		deletingResultFiles = new Set([...deletingResultFiles, filename]);
+		try {
+			const res = await fetch(`${BACKEND_URL}/pdf/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			searchResults = searchResults.filter((r) => r.filename !== filename);
+			searchTotal = Math.max(0, searchTotal - 1);
+		} catch (err) {
+			searchError = err instanceof Error ? err.message : "Errore durante l'eliminazione.";
+		} finally {
+			deletingResultFiles = new Set([...deletingResultFiles].filter((f) => f !== filename));
 		}
 	}
 
@@ -238,8 +343,9 @@
 
 	<section class="tabs-section">
 		<div class="tabs">
-			<button class="tab-button active" on:click={() => (currentTab = 'upload')}>Carica PDF</button>
-			<button class="tab-button" on:click={() => (currentTab = 'search')}>Cerca PDF</button>
+			<button class="tab-button" class:active={currentTab === 'upload'} on:click={() => switchTab('upload')}>Carica PDF</button>
+			<button class="tab-button" class:active={currentTab === 'search'} on:click={() => switchTab('search')}>Cerca PDF</button>
+			<button class="tab-button" class:active={currentTab === 'library'} on:click={() => switchTab('library')}>Libreria</button>
 		</div>
 	</section>
 
@@ -316,7 +422,7 @@
 				</div>
 			</div>
 		</section>
-	{:else}
+	{:else if currentTab === 'search'}
 		<section class="search-section">
 			<div class="search-form-container">
 				<div class="search-form">
@@ -326,13 +432,23 @@
 							type="text"
 							bind:value={searchQuery}
 							placeholder="es: 'concetti di algebra' o 'calcoli matematici'"
-							on:keydown={(e) => e.key === 'Enter' && searchPDFs()}
+							on:keydown={(e) => e.key === 'Enter' && searchPDFs(0)}
+						/>
+					</label>
+
+					<label>
+						<span>Filtra per nome file</span>
+						<input
+							type="text"
+							bind:value={filenameFilter}
+							placeholder="es: 'algebra.pdf'"
+							on:keydown={(e) => e.key === 'Enter' && searchPDFs(0)}
 						/>
 					</label>
 
 					<button
 						class="button primary"
-						on:click|preventDefault={searchPDFs}
+						on:click|preventDefault={() => searchPDFs(0)}
 						disabled={searchLoading || !searchQuery.trim()}
 					>
 						{searchLoading ? 'Ricerca...' : 'Cerca'}
@@ -346,7 +462,7 @@
 
 			{#if searchResults.length > 0}
 				<div class="results">
-					<h2>Risultati ({searchResults.length})</h2>
+					<h2>Risultati ({searchTotal})</h2>
 					<div class="results-grid">
 						{#each searchResults as result}
 							<div class="result-card">
@@ -354,7 +470,10 @@
 									<h3>{result.filename}</h3>
 									<span class="score">{(result.score * 100).toFixed(1)}%</span>
 								</div>
-								<p class="preview-text">{result.preview_text}...</p>
+								{#if result.page_number !== null && result.page_number !== undefined}
+									<p class="page-number">Pagina {result.page_number}</p>
+								{/if}
+								<p class="preview-text">{@html highlightQuery(result.preview_text, searchQuery)}...</p>
 								<div class="result-actions">
 									<button class="button small" on:click={() => openPreview(result.relative_url)}>
 										👁️ Preview
@@ -362,10 +481,73 @@
 									<button class="button small secondary" on:click={() => openPdfInNewTab(result.relative_url)}>
 										📄 Apri in nuova scheda
 									</button>
+									<button
+										class="button small danger"
+										on:click={() => deleteSearchResult(result.filename)}
+										disabled={deletingResultFiles.has(result.filename)}
+									>
+										{deletingResultFiles.has(result.filename) ? '...' : '🗑️'}
+									</button>
 								</div>
 							</div>
 						{/each}
 					</div>
+					<div class="pagination">
+						<button
+							class="button secondary small"
+							on:click={() => searchPDFs(searchOffset - searchLimit)}
+							disabled={searchOffset === 0 || searchLoading}
+						>
+							← Precedente
+						</button>
+						<span class="pagination-info">
+							{searchOffset + 1}–{Math.min(searchOffset + searchLimit, searchTotal)} di {searchTotal}
+						</span>
+						<button
+							class="button secondary small"
+							on:click={() => searchPDFs(searchOffset + searchLimit)}
+							disabled={searchOffset + searchLimit >= searchTotal || searchLoading}
+						>
+							Successivo →
+						</button>
+					</div>
+				</div>
+			{/if}
+		</section>
+	{:else if currentTab === 'library'}
+		<section class="library-section">
+			{#if libraryLoading}
+				<p class="muted">Caricamento libreria...</p>
+			{:else if libraryError}
+				<p class="status error">{libraryError}</p>
+			{:else if libraryPdfs.length === 0}
+				<p class="muted">Nessun PDF indicizzato.</p>
+			{:else}
+				<div class="library-list">
+					{#each libraryPdfs as pdf}
+						<div class="library-item">
+							<div class="library-info">
+								<strong>{pdf.filename}</strong>
+								<span class="muted">{pdf.chunk_count} chunk · {new Date(pdf.indexed_at).toLocaleDateString('it-IT')}</span>
+							</div>
+							<div class="library-actions">
+								<button
+									class="button small secondary"
+									on:click={() => reindexPdf(pdf.filename)}
+									disabled={reindexingFiles.has(pdf.filename)}
+								>
+									{reindexingFiles.has(pdf.filename) ? 'Re-indicizzazione...' : 'Re-indicizza'}
+								</button>
+								<button
+									class="button small danger"
+									on:click={() => deleteFromLibrary(pdf.filename)}
+									disabled={deletingFiles.has(pdf.filename)}
+								>
+									{deletingFiles.has(pdf.filename) ? 'Eliminazione...' : '🗑️ Elimina'}
+								</button>
+							</div>
+						</div>
+					{/each}
 				</div>
 			{/if}
 		</section>
@@ -411,17 +593,17 @@
 		font-size: 2.5rem;
 		font-weight: 700;
 		margin-bottom: 1rem;
-		color: #111827;
+		color: var(--color-text);
 	}
 
 	.hero-text p {
 		font-size: 1.125rem;
-		color: #6b7280;
+		color: var(--color-text-muted);
 	}
 
 	.tabs-section {
 		margin-bottom: 2rem;
-		border-bottom: 2px solid #e5e7eb;
+		border-bottom: 2px solid var(--color-border);
 	}
 
 	.tabs {
@@ -436,7 +618,7 @@
 		padding: 0.75rem 1.5rem;
 		border: none;
 		background: transparent;
-		color: #6b7280;
+		color: var(--color-text-muted);
 		font-weight: 500;
 		font-size: 1rem;
 		cursor: pointer;
@@ -462,12 +644,12 @@
 	}
 
 	.dropzone {
-		border: 2px dashed #d1d5db;
+		border: 2px dashed var(--color-border);
 		border-radius: 12px;
 		padding: 3rem 2rem;
 		text-align: center;
 		transition: all 0.3s ease;
-		background: #f9fafb;
+		background: var(--color-bg-secondary);
 	}
 
 	.dropzone.is-dragging {
@@ -500,12 +682,12 @@
 
 	.file-name {
 		font-weight: 600;
-		color: #111827;
+		color: var(--color-text);
 		margin: 0;
 	}
 
 	.file-size {
-		color: #6b7280;
+		color: var(--color-text-muted);
 		font-size: 0.875rem;
 		margin: 0;
 	}
@@ -519,7 +701,7 @@
 
 	.instructions p {
 		margin: 0;
-		color: #6b7280;
+		color: var(--color-text-muted);
 	}
 
 	.button {
@@ -570,10 +752,10 @@
 	}
 
 	.side-card {
-		background: white;
+		background: var(--color-card-bg);
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 1px 3px var(--color-shadow);
 		height: fit-content;
 	}
 
@@ -581,7 +763,7 @@
 	.side-card h3 {
 		margin-top: 0;
 		margin-bottom: 1rem;
-		color: #111827;
+		color: var(--color-text);
 	}
 
 	.side-card .button {
@@ -591,12 +773,12 @@
 
 	.divider {
 		height: 1px;
-		background: #e5e7eb;
+		background: var(--color-border);
 		margin: 1.5rem 0;
 	}
 
 	.muted {
-		color: #6b7280;
+		color: var(--color-text-muted);
 		font-size: 0.875rem;
 		margin-bottom: 1rem;
 	}
@@ -608,15 +790,15 @@
 	}
 
 	.status.success {
-		background-color: #d1fae5;
-		color: #065f46;
-		border: 1px solid #a7f3d0;
+		background-color: var(--color-success-bg);
+		color: var(--color-success-text);
+		border: 1px solid var(--color-success-border);
 	}
 
 	.status.error {
-		background-color: #fee2e2;
-		color: #991b1b;
-		border: 1px solid #fecaca;
+		background-color: var(--color-error-bg);
+		color: var(--color-error-text);
+		border: 1px solid var(--color-error-border);
 	}
 
 	/* Search Section */
@@ -643,15 +825,17 @@
 
 	.search-form label span {
 		font-weight: 500;
-		color: #374151;
+		color: var(--color-text);
 		font-size: 0.875rem;
 	}
 
 	.search-form input[type='text'] {
 		padding: 0.75rem;
-		border: 1px solid #d1d5db;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 1rem;
+		background: var(--color-input-bg);
+		color: var(--color-text);
 		transition: border-color 0.2s;
 	}
 
@@ -667,7 +851,7 @@
 
 	.results h2 {
 		margin-bottom: 1.5rem;
-		color: #111827;
+		color: var(--color-text);
 	}
 
 	.results-grid {
@@ -677,10 +861,10 @@
 	}
 
 	.result-card {
-		background: white;
+		background: var(--color-card-bg);
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 1px 3px var(--color-shadow);
 		transition: transform 0.2s, box-shadow 0.2s;
 	}
 
@@ -717,7 +901,7 @@
 	}
 
 	.preview-text {
-		color: #6b7280;
+		color: var(--color-text-muted);
 		margin: 0 0 1rem 0;
 		line-height: 1.6;
 		font-size: 0.875rem;
@@ -750,7 +934,7 @@
 	}
 
 	.modal-content {
-		background: white;
+		background: var(--color-card-bg);
 		border-radius: 12px;
 		width: 100%;
 		max-width: 900px;
@@ -764,12 +948,12 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1.5rem;
-		border-bottom: 1px solid #e5e7eb;
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.modal-header h2 {
 		margin: 0;
-		color: #111827;
+		color: var(--color-text);
 	}
 
 	.close-button {
@@ -777,7 +961,7 @@
 		border: none;
 		font-size: 1.5rem;
 		cursor: pointer;
-		color: #6b7280;
+		color: var(--color-text-muted);
 		padding: 0;
 		width: 32px;
 		height: 32px;
@@ -789,7 +973,7 @@
 	}
 
 	.close-button:hover {
-		background-color: #f3f4f6;
+		background-color: var(--color-bg-secondary);
 	}
 
 	.modal-body {
@@ -803,7 +987,7 @@
 	.pdf-preview {
 		width: 100%;
 		height: 600px;
-		border: 1px solid #e5e7eb;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		margin-bottom: 1rem;
 	}
@@ -837,6 +1021,97 @@
 		.pdf-preview {
 			height: 400px;
 		}
+
+		.library-item {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.library-actions {
+			width: 100%;
+			justify-content: flex-end;
+		}
+
+		.pagination {
+			flex-wrap: wrap;
+		}
+
+		.button,
+		:global(button),
+		:global(input[type='text']),
+		:global(input[type='file']) {
+			min-height: 44px;
+		}
+	}
+
+	/* Library Section */
+	.library-section {
+		margin-top: 2rem;
+	}
+
+	.library-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.library-item {
+		background: var(--color-card-bg);
+		padding: 1rem 1.5rem;
+		border-radius: 8px;
+		box-shadow: 0 1px 3px var(--color-shadow);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.library-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.library-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.button.danger {
+		background: #ef4444;
+		color: white;
+	}
+
+	.button.danger:hover:not(:disabled) {
+		background: #dc2626;
+	}
+
+	.page-number {
+		font-size: 0.75rem;
+		color: #4f46e5;
+		font-weight: 500;
+		margin: 0 0 0.5rem 0;
+	}
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		margin-top: 2rem;
+	}
+
+	.pagination-info {
+		color: var(--color-text-muted);
+		font-size: 0.875rem;
+	}
+
+	:global(mark) {
+		background-color: #fef08a;
+		color: #111827;
+		border-radius: 2px;
+		padding: 0 1px;
 	}
 </style>
 
