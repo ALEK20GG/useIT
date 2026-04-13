@@ -2,7 +2,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/stores';
 
-	let { children } = $props();
+	let { children, data } = $props();
 </script>
 
 <svelte:head>
@@ -19,6 +19,14 @@
 			<a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a>
 			<a href="/analyze" class="nav-link" class:active={$page.url.pathname === '/analyze'}>Scansiona</a>
 			<a href="/semantic" class="nav-link" class:active={$page.url.pathname === '/semantic'}>Cerca</a>
+			{#if data.user}
+				<a
+					href="/session"
+					class="nav-link"
+					class:active={$page.url.pathname === '/session'}>Sessione</a>
+				<span class="nav-user" title={data.user.email}>{data.user.email}</span>
+				<a href="/logout" class="nav-link logout">Esci</a>
+			{/if}
 		</div>
 	</div>
 </nav>
@@ -105,6 +113,23 @@
 		height: 2px;
 		background: linear-gradient(135deg, #4f46e5, #6366f1);
 		border-radius: 2px 2px 0 0;
+	}
+
+	.nav-user {
+		font-size: 0.8rem;
+		color: #6b7280;
+		max-width: 160px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.nav-link.logout {
+		color: #b45309;
+	}
+
+	.nav-link.logout:hover {
+		color: #92400e;
 	}
 
 	main {

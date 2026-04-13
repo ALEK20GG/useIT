@@ -1,5 +1,7 @@
 <script lang="ts">
-  const BACKEND_URL = 'http://127.0.0.1:8000';
+  import { PUBLIC_BACKEND_URL } from '$env/static/public';
+
+  const BACKEND_URL = PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
   let selectedFile: File | null = null;
   let previewUrl: string | null = null;

@@ -76,7 +76,9 @@ def create_collection(
 ) -> dict[str, str]:
     """Create (or recreate) a Qdrant collection with the provided vector config."""
 
-    client.recreate_collection(
+    if client.collection_exists(payload.name):
+        client.delete_collection(payload.name)
+    client.create_collection(
         collection_name=payload.name,
         vectors_config=VectorParams(
             size=payload.vector_size, distance=_distance_from_label(payload.distance)
@@ -149,7 +151,9 @@ def ingest_notes(
     vector_size = len(vectors[0])
 
     # 2) Ensure collection exists with the embedding model's vector size
-    client.recreate_collection(
+    if client.collection_exists(body.collection_name):
+        client.delete_collection(body.collection_name)
+    client.create_collection(
         collection_name=body.collection_name,
         vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
     )

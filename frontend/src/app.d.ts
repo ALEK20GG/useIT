@@ -2,11 +2,15 @@
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface PageState {}
-		// interface Platform {}
+		interface Locals {
+			user: {
+				email: string;
+				name?: string;
+				googleId?: string;
+				picture?: string;
+				portalClaims?: Record<string, string | number | boolean | null>;
+			} | null;
+		}
 	}
 }
 

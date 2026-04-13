@@ -1,0 +1,10 @@
+{
+	"name": "useit-1",
+	"private": true,
+	"workspaces": ["frontend"],
+	"scripts": {
+		"setup": "python -m pip install -r test-server-blueprint/requirements.txt",
+		"dev": "npm run dev -w frontend",
+		"dev:test-server": "npm run dev --prefix test-server-blueprint"
+	}
+}
