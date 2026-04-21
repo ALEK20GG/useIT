@@ -221,9 +221,97 @@ Incremental implementation of bug fixes and feature enhancements for the UseIt a
 - [x] 13. Final checkpoint — Ensure all tests pass and features are wired together
   - Ensure all tests pass, ask the user if questions arise.
 
+- [x] 14. Correzione errori di accessibilità (Requirements 20–22)
+  - [x] 14.1 Aggiungere ruoli ARIA per elementi drag-and-drop
+    - Aggiungere `role="button"` a tutti gli elementi `<div>` con handler `on:dragover`, `on:dragleave`, o `on:drop` in `frontend/src/routes/pdf/+page.svelte` e `frontend/src/routes/analyze/+page.svelte`
+    - Aggiungere `tabindex="0"` per rendere le aree accessibili da tastiera
+    - Aggiungere attributi `aria-label` descrittivi (es. "Area di caricamento PDF - trascina qui i file o clicca per selezionare")
+    - _Requirements: 20.1, 20.2, 20.3_
+
+  - [x] 14.2 Implementare supporto tastiera per elementi clickabili
+    - Aggiungere `role="button"` a tutti gli elementi `<div>` con handler `on:click` che non sono bottoni semantici
+    - Implementare handler `on:keydown` per supportare attivazione con tasti Enter e Spazio
+    - Assicurare che tutti gli elementi clickabili abbiano valori `tabindex` appropriati per la navigazione da tastiera
+    - Aggiungere attributi `aria-label` descrittivi dove il contesto visuale potrebbe non essere chiaro per screen reader
+    - _Requirements: 21.1, 21.2, 21.3, 21.4_
+
+  - [x] 14.3 Aggiungere title per iframe PDF
+    - Aggiungere attributo `title` all'elemento `<iframe>` nel modal di anteprima PDF in `frontend/src/routes/pdf/+page.svelte`
+    - Impostare il title a un valore descrittivo come "Anteprima del documento PDF" o includere dinamicamente il nome del file PDF
+    - _Requirements: 22.1, 22.2_
+
+  - [x] 14.4 Scrivere test per conformità accessibilità ARIA
+    - **Property 9: ARIA accessibility compliance**
+    - **Validates: Requirements 20.1, 20.2, 20.3, 21.1, 21.2, 21.4**
+    - Testare che elementi interattivi abbiano ruoli ARIA appropriati, handler tastiera e label descrittive
+
+- [x] 15. Miglioramenti design system e UI (Requirement 23)
+  - [x] 15.1 Implementare nuovo sistema di colori
+    - Definire palette di colori migliorata con rapporti di contrasto migliori per modalità chiara e scura
+    - Implementare token di colore semantici: `--color-primary`, `--color-secondary`, `--color-success`, `--color-warning`, `--color-error`
+    - Assicurare conformità WCAG AA (4.5:1 per testo normale, 3:1 per testo grande)
+    - _Requirements: 23.1, 18.3_
+
+  - [x] 15.2 Migliorare tipografia e sistema di spaziatura
+    - Implementare scala tipografica consistente usando proprietà CSS personalizzate
+    - Definire sistema di spaziatura basato su unità di 8px (0.5rem, 1rem, 1.5rem, 2rem, 3rem, 4rem)
+    - Ottimizzare altezza di riga e spaziatura lettere per leggibilità
+    - Applicare margini e padding consistenti su tutti i componenti
+    - _Requirements: 23.3_
+
+  - [x] 15.3 Implementare stati hover/focus/active migliorati
+    - Migliorare stili dei bottoni con gerarchia visuale chiara
+    - Implementare stati hover con transizioni di colore sottili (200ms ease)
+    - Aggiungere indicatori di focus con outline di 2px e contrasto appropriato
+    - Implementare stati attivi con feedback visuale
+    - Gestire stati disabilitati con opacità ridotta
+    - _Requirements: 23.2, 23.5_
+
+  - [x] 15.4 Aggiungere animazioni e transizioni
+    - Implementare transizioni sottili per stati hover/focus (200ms ease)
+    - Aggiungere animazioni per stati di caricamento
+    - Rispettare media query `prefers-reduced-motion` per accessibilità
+    - Implementare transizioni di pagina che non interferiscono con la navigazione
+    - _Requirements: 23.4_
+
+  - [x] 15.5 Scrivere test per conformità contrasto colori
+    - **Property 10: Color contrast compliance**
+    - **Validates: Requirements 18.3, 23.1**
+    - Testare che le combinazioni di colori rispettino le linee guida WCAG AA in entrambe le modalità
+
+- [x] 16. Creazione documentazione architetturale (Requirement 24)
+  - [x] 16.1 Creare documentazione struttura frontend
+    - Documentare la struttura delle route SvelteKit e componenti principali
+    - Spiegare il sistema di gestione dello stato e le variabili reattive
+    - Documentare l'implementazione dell'accessibilità e responsive design
+    - Spiegare la gestione delle chiamate API e degli stati di errore
+    - _Requirements: 24.2_
+
+  - [x] 16.2 Creare documentazione struttura backend
+    - Documentare la struttura dei moduli FastAPI e endpoint principali
+    - Spiegare il processo di elaborazione dei documenti (estrazione, chunking, embedding)
+    - Documentare la strategia di indicizzazione e gestione delle collezioni Qdrant
+    - Spiegare la gestione degli errori e delle configurazioni
+    - _Requirements: 24.3_
+
+  - [x] 16.3 Documentare flussi di dati e architettura
+    - Creare diagrammi di sequenza per i flussi principali (caricamento PDF, ricerca semantica)
+    - Documentare l'architettura generale del sistema e le interazioni tra componenti
+    - Spiegare la strategia di deployment e configurazione per diversi ambienti
+    - Documentare considerazioni di sicurezza e performance
+    - _Requirements: 24.1, 24.4_
+
+  - [x] 16.4 Finalizzare documentazione in italiano
+    - Assicurare che tutta la documentazione sia scritta in italiano
+    - Includere esempi pratici e casi d'uso
+    - Aggiungere sezioni di troubleshooting e FAQ
+    - Creare indice e struttura navigabile
+    - _Requirements: 24.5_
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for faster MVP
 - Property tests use `hypothesis` (Python) and `vitest` (TypeScript)
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation at logical boundaries
+- I nuovi task 14-16 coprono accessibilità, design system e documentazione architetturale

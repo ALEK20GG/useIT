@@ -262,7 +262,7 @@ print(f"PDFS_DIR exists: {PDFS_DIR.exists()}")
 async def upload_pdf(
     file: UploadFile = File(...),
     client: QdrantClient = Depends(get_qdrant_client),
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Upload a PDF file, save it to disk, extract text, and index it in Qdrant.
 
@@ -723,7 +723,7 @@ async def delete_pdf(
 async def reindex_pdf(
     filename: str,
     client: QdrantClient = Depends(get_qdrant_client),
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Re-index a single PDF: delete existing points and re-extract/re-embed."""
     file_path = PDFS_DIR / filename
 

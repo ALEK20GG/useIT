@@ -51,9 +51,11 @@
   .health-indicator {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    transition: all 0.2s ease;
   }
 
   .dot {
@@ -61,29 +63,46 @@
     height: 8px;
     border-radius: 50%;
     display: inline-block;
+    transition: all 0.2s ease;
   }
 
   .online .dot {
-    background-color: #22c55e;
+    background-color: var(--color-success);
+    box-shadow: 0 0 var(--space-2) var(--color-success);
   }
 
   .offline .dot {
-    background-color: #ef4444;
+    background-color: var(--color-error);
+    box-shadow: 0 0 var(--space-2) var(--color-error);
   }
 
   .checking .dot {
-    background-color: #d1d5db;
+    background-color: var(--color-secondary-muted);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 
   .online .label {
-    color: #16a34a;
+    color: var(--color-success);
   }
 
   .offline .label {
-    color: #dc2626;
+    color: var(--color-error);
   }
 
   .checking .label {
-    color: #9ca3af;
+    color: var(--color-text-subtle);
+  }
+
+  .label {
+    transition: color 0.2s ease;
   }
 </style>

@@ -43,6 +43,10 @@ frontend/static/pdf-source/
 *.swo
 .DS_Store
 Thumbs.db
+*.md
+
+.kiro/
+.hypothesis/
 
 # IDE / tooling
 .vscode/

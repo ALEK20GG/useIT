@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main class="homepage">
+<main class="homepage page-transition">
   <!-- Hero Section -->
   <section class="hero">
     <div class="hero-content">
@@ -22,10 +22,10 @@
         completa e trova facilmente ciò che cerchi grazie alla ricerca semantica avanzata.
       </p>
       <div class="hero-actions">
-        <a href="/analyze" class="button primary large">
+        <a href="/analyze" class="btn btn-primary btn-lg">
           <span>📷 Scansiona prodotto</span>
         </a>
-        <a href="/semantic" class="button secondary large">
+        <a href="/semantic" class="btn btn-secondary btn-lg">
           <span>🔍 Cerca prodotti</span>
         </a>
       </div>
@@ -111,8 +111,8 @@
       <h2>Pronto per iniziare?</h2>
       <p>Inizia a scansionare prodotti o cerca nella documentazione esistente</p>
       <div class="cta-actions">
-        <a href="/analyze" class="button primary large">Scansiona prodotto</a>
-        <a href="/semantic" class="button outline large">Cerca prodotti</a>
+        <a href="/analyze" class="btn btn-primary btn-lg">Scansiona prodotto</a>
+        <a href="/semantic" class="btn btn-secondary btn-lg">Cerca prodotti</a>
       </div>
     </div>
   </section>
@@ -121,15 +121,15 @@
 <style>
   .homepage {
     min-height: 100vh;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    font-family: var(--font-family-sans);
+    background: var(--color-bg);
   }
 
   /* Hero Section */
   .hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
     color: white;
-    padding: 5rem 1.5rem;
+    padding: var(--space-16) var(--space-6);
     text-align: center;
   }
 
@@ -139,10 +139,12 @@
   }
 
   .hero-title {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: 1.5rem;
-    line-height: 1.2;
+    font-size: var(--font-size-5xl);
+    font-weight: var(--font-weight-black);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    margin-bottom: var(--space-6);
+    color: white;
   }
 
   .gradient-text {
@@ -153,10 +155,11 @@
   }
 
   .hero-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: 2.5rem;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-relaxed);
+    letter-spacing: var(--letter-spacing-normal);
+    margin-bottom: var(--space-10);
     opacity: 0.95;
-    line-height: 1.6;
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
@@ -164,70 +167,14 @@
 
   .hero-actions {
     display: flex;
-    gap: 1rem;
+    gap: var(--space-4);
     justify-content: center;
     flex-wrap: wrap;
   }
 
-  /* Buttons */
-  .button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 2rem;
-    border-radius: 999px;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border: none;
-    cursor: pointer;
-  }
-
-  .button.large {
-    padding: 1rem 2.5rem;
-    font-size: 1.1rem;
-  }
-
-  .button.primary {
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
-    color: white;
-    box-shadow: 0 12px 25px rgba(55, 48, 163, 0.45);
-  }
-
-  .button.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 30px rgba(55, 48, 163, 0.55);
-  }
-
-  .button.secondary {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-  }
-
-  .button.secondary:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-  }
-
-  .button.outline {
-    background: transparent;
-    color: #4f46e5;
-    border: 2px solid #4f46e5;
-  }
-
-  .button.outline:hover {
-    background: #4f46e5;
-    color: white;
-    transform: translateY(-2px);
-  }
-
   /* Features Section */
   .features {
-    padding: 5rem 1.5rem;
+    padding: var(--space-16) var(--space-6);
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -235,7 +182,7 @@
   .features-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: var(--space-8);
   }
 
   @media (min-width: 768px) {
@@ -245,69 +192,81 @@
   }
 
   .feature-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    border: 1px solid #e5e7eb;
+    background: var(--color-card-bg);
+    border-radius: var(--space-3);
+    padding: var(--space-8);
+    box-shadow: 0 1px var(--space-1) var(--color-shadow);
+    border: 1px solid var(--color-border);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: scale-in 0.3s ease-out backwards;
   }
 
+  .feature-card:nth-child(1) { animation-delay: 0.1s; }
+  .feature-card:nth-child(2) { animation-delay: 0.2s; }
+  .feature-card:nth-child(3) { animation-delay: 0.3s; }
+
   .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 1px var(--space-3) var(--color-shadow-medium);
   }
 
   .feature-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: var(--font-size-5xl);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--space-4);
   }
 
   .feature-card h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    color: #111827;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-snug);
+    letter-spacing: var(--letter-spacing-normal);
+    margin-bottom: var(--space-3);
+    color: var(--color-text);
   }
 
   .feature-card p {
-    color: #6b7280;
-    line-height: 1.6;
-    margin-bottom: 1rem;
+    color: var(--color-text-muted);
+    line-height: var(--line-height-relaxed);
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-base);
   }
 
   .feature-link {
-    color: #4f46e5;
+    color: var(--color-primary);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
     transition: color 0.2s ease;
   }
 
   .feature-link:hover {
-    color: #6366f1;
+    color: var(--color-primary-hover);
   }
 
   /* How it works Section */
   .how-it-works {
-    padding: 5rem 1.5rem;
-    background: white;
+    padding: var(--space-16) var(--space-6);
+    background: var(--color-bg-secondary);
     max-width: 1200px;
     margin: 0 auto;
   }
 
   .section-title {
-    font-size: 2.5rem;
-    font-weight: 800;
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-black);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
     text-align: center;
-    margin-bottom: 3rem;
-    color: #111827;
+    margin-bottom: var(--space-12);
+    color: var(--color-text);
   }
 
   .steps {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: var(--space-10);
   }
 
   @media (min-width: 768px) {
@@ -321,39 +280,48 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+    animation: fade-in 0.5s ease-out backwards;
   }
+
+  .step:nth-child(1) { animation-delay: 0.2s; }
+  .step:nth-child(2) { animation-delay: 0.4s; }
+  .step:nth-child(3) { animation-delay: 0.6s; }
 
   .step-number {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--space-6);
+    box-shadow: 0 1px var(--space-3) var(--color-shadow-medium);
   }
 
   .step-content h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    color: #111827;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-snug);
+    letter-spacing: var(--letter-spacing-normal);
+    margin-bottom: var(--space-3);
+    color: var(--color-text);
   }
 
   .step-content p {
-    color: #6b7280;
-    line-height: 1.6;
+    color: var(--color-text-muted);
+    line-height: var(--line-height-relaxed);
+    font-size: var(--font-size-base);
   }
 
   /* CTA Section */
   .cta {
-    padding: 5rem 1.5rem;
-    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+    padding: var(--space-16) var(--space-6);
+    background: var(--color-bg);
     text-align: center;
   }
 
@@ -363,21 +331,24 @@
   }
 
   .cta h2 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    color: #111827;
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-black);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    margin-bottom: var(--space-4);
+    color: var(--color-text);
   }
 
   .cta p {
-    font-size: 1.25rem;
-    color: #6b7280;
-    margin-bottom: 2.5rem;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-10);
   }
 
   .cta-actions {
     display: flex;
-    gap: 1rem;
+    gap: var(--space-4);
     justify-content: center;
     flex-wrap: wrap;
   }
@@ -385,19 +356,19 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .hero-title {
-      font-size: 2rem;
+      font-size: var(--font-size-3xl);
     }
 
     .hero-subtitle {
-      font-size: 1.1rem;
+      font-size: var(--font-size-lg);
     }
 
     .section-title {
-      font-size: 2rem;
+      font-size: var(--font-size-3xl);
     }
 
     .cta h2 {
-      font-size: 2rem;
+      font-size: var(--font-size-3xl);
     }
   }
 </style>

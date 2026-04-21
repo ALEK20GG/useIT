@@ -142,7 +142,7 @@ A `<HealthIndicator>` component is added to the navbar. It:
 - Renders a green dot + "Online" or red dot + "Offline" label.
 - Does not block rendering (async, non-blocking).
 
-#### `/pdf` — PDF Management Page (Requirements 3, 9–14, 17, 19)
+#### `/pdf` — PDF Management Page (Requirements 3, 9–14, 17, 19–22)
 
 Tab state is driven by `currentTab` reactive variable; the `active` CSS class is bound with `class:active={currentTab === 'upload'}` etc. (fixes Requirement 3).
 
@@ -150,6 +150,12 @@ New tabs added:
 - **Carica PDF** (existing upload + index-all)
 - **Cerca PDF** (existing search, enhanced with filter input, highlighting, pagination, delete button)
 - **Libreria** (new — lists indexed PDFs with re-index and delete buttons)
+
+**Accessibility Enhancements (Requirements 20-22):**
+- All drag-and-drop areas have `role="button"`, `tabindex="0"`, and descriptive `aria-label` attributes
+- All clickable `<div>` elements have `role="button"` and keyboard event handlers for Enter/Space keys
+- PDF preview iframe has descriptive `title` attribute ("Anteprima del documento PDF - {filename}")
+- All interactive elements support keyboard navigation with appropriate `tabindex` values
 
 #### `$env/static/public` (Requirement 8)
 
@@ -161,6 +167,40 @@ const BACKEND_URL = PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
 ```
 
 A `.env.example` file is created at `frontend/.env.example`.
+
+#### Visual Design System (Requirement 23)
+
+A comprehensive design system is implemented with:
+
+**Color Palette:**
+- CSS custom properties for all colors with improved contrast ratios
+- Light mode: primary blues (#2563eb, #1d4ed8), neutral grays (#f8fafc to #1e293b)
+- Dark mode: adjusted palette with WCAG AA compliant contrast (4.5:1 for normal text, 3:1 for large text)
+- Semantic color tokens: `--color-primary`, `--color-secondary`, `--color-success`, `--color-warning`, `--color-error`
+
+**Typography:**
+- Consistent font scale using CSS custom properties
+- Base font: system font stack for optimal performance
+- Heading hierarchy with proper contrast and spacing
+- Line height and letter spacing optimized for readability
+
+**Spacing System:**
+- 8px base unit with consistent spacing scale (0.5rem, 1rem, 1.5rem, 2rem, 3rem, 4rem)
+- Consistent margins and padding across all components
+- Responsive spacing that adapts to viewport size
+
+**Interactive Elements:**
+- Enhanced button styles with clear visual hierarchy
+- Hover states with subtle color transitions (200ms ease)
+- Focus indicators with 2px outline and appropriate color contrast
+- Active states with visual feedback
+- Disabled states with reduced opacity and no pointer events
+
+**Animations and Transitions:**
+- Subtle transitions for hover/focus states (200ms ease)
+- Respects `prefers-reduced-motion` media query for accessibility
+- Loading states with smooth animations
+- Page transitions that don't interfere with navigation
 
 ---
 
@@ -326,6 +366,18 @@ interface IndexedPDF {
 
 **Validates: Requirements 12.4**
 
+### Property 9: ARIA accessibility compliance
+
+*For any* interactive element with click handlers, the rendered DOM SHALL include appropriate ARIA roles, keyboard event handlers, and descriptive labels for screen reader compatibility.
+
+**Validates: Requirements 20.1, 20.2, 20.3, 21.1, 21.2, 21.4**
+
+### Property 10: Color contrast compliance
+
+*For any* color combination used in the design system, the contrast ratio SHALL meet or exceed WCAG AA guidelines (4.5:1 for normal text, 3:1 for large text) in both light and dark modes.
+
+**Validates: Requirements 18.3, 23.1**
+
 ---
 
 ## Error Handling
@@ -350,6 +402,9 @@ interface IndexedPDF {
 - The delete button is disabled while a delete request is in flight to prevent double-clicks.
 - Pagination buttons are disabled when on the first/last page respectively.
 - `{@html highlightedText}` is only used after sanitizing `preview_text` through a `sanitizeHtml` helper that escapes `<`, `>`, `&`, `"` before wrapping query terms in `<mark>` tags.
+- **Accessibility error handling**: Screen readers receive appropriate error announcements via `aria-live` regions
+- **Visual design error states**: Error messages use semantic color tokens and maintain proper contrast ratios
+- **Keyboard navigation errors**: Focus management ensures users can navigate away from error states using keyboard
 
 ---
 
@@ -390,7 +445,7 @@ def test_keyword_boost_bounded(query, chunk): ...
 def test_normalize_score_bounded(score): ...
 ```
 
-Properties 5–8 require integration-level setup (Qdrant, frontend rendering) and are covered by integration tests with representative examples rather than full property-based tests.
+Properties 5–10 require integration-level setup (Qdrant, frontend rendering) and are covered by integration tests with representative examples rather than full property-based tests.
 
 ### Integration Tests
 
@@ -406,3 +461,227 @@ Properties 5–8 require integration-level setup (Qdrant, frontend rendering) an
 - Health indicator: mock `fetch` returning 200 → green dot; mock network error → red dot.
 - Pagination buttons: disabled state on first/last page.
 - `sanitizeHtml`: XSS payloads are neutralized; query terms are wrapped in `<mark>`.
+- **Accessibility tests (Requirements 20-22)**: 
+  - Drag-drop areas have `role="button"`, `tabindex="0"`, and `aria-label`
+  - Clickable divs have keyboard handlers and proper ARIA roles
+  - PDF iframe has descriptive `title` attribute
+- **Visual design tests (Requirement 23)**:
+  - CSS custom properties have correct values
+  - Contrast ratios meet WCAG AA guidelines
+  - Interactive elements have proper hover/focus/active states
+  - Animations respect `prefers-reduced-motion`
+
+---
+
+## Documentazione Architetturale (Requirement 24)
+
+### Panoramica del Sistema
+
+**UseIt** è una piattaforma di ricerca semantica per documenti PDF che combina tecnologie moderne per offrire un'esperienza di ricerca intelligente e intuitiva. Il sistema è progettato per funzionare localmente senza dipendenze cloud, rendendolo ideale per l'elaborazione di documenti sensibili o per ambienti con connettività limitata.
+
+### Architettura Frontend (SvelteKit 5)
+
+#### Struttura delle Route
+
+```
+frontend/src/routes/
+├── +layout.svelte          # Layout principale con navbar e indicatore di stato
+├── +page.svelte           # Homepage con panoramica del sistema
+├── pdf/+page.svelte       # Gestione PDF (caricamento, ricerca, libreria)
+├── semantic/+page.svelte  # Ricerca semantica nelle note
+└── analyze/+page.svelte   # Analisi immagini (funzionalità aggiuntiva)
+```
+
+#### Componenti Principali
+
+**+layout.svelte:**
+- Navbar responsive con navigazione principale
+- Indicatore di stato della connessione backend (verde/rosso)
+- Supporto per tema scuro/chiaro automatico
+- Gestione dell'accessibilità con ARIA labels
+
+**pdf/+page.svelte:**
+- **Tab "Carica PDF"**: Area drag-and-drop per il caricamento di file PDF con supporto per accessibilità (ARIA roles, keyboard navigation)
+- **Tab "Cerca PDF"**: Interfaccia di ricerca con filtri, evidenziazione dei risultati, paginazione
+- **Tab "Libreria"**: Lista dei PDF indicizzati con metadati (numero di chunk, data di indicizzazione)
+- Gestione degli stati di caricamento e errore
+- Responsive design per dispositivi mobili
+
+**semantic/+page.svelte:**
+- Interfaccia per l'inserimento e la ricerca di note semantiche
+- Integrazione con la collezione Qdrant dedicata alle note
+
+#### Gestione dello Stato
+
+- Variabili reattive Svelte per lo stato dell'interfaccia
+- Gestione asincrona delle chiamate API con try/catch
+- Timeout configurabili per le richieste HTTP
+- Indicatori di caricamento per migliorare l'UX
+
+#### Accessibilità
+
+- Conformità WCAG AA per contrasto dei colori
+- Supporto completo per navigazione da tastiera
+- ARIA roles e labels per elementi interattivi
+- Supporto per screen reader
+- Rispetto delle preferenze di movimento ridotto
+
+### Architettura Backend (FastAPI)
+
+#### Struttura dei Moduli
+
+```
+backend/app/
+├── main.py           # Router principale e gestione endpoint
+├── config.py         # Configurazione e variabili d'ambiente
+├── dependencies.py   # Factory per client Qdrant e dipendenze
+├── embeddings.py     # Gestione modelli di embedding
+├── pdf_utils.py      # Utilità per estrazione e chunking del testo
+└── schemas.py        # Modelli Pydantic per request/response
+```
+
+#### Endpoint API
+
+**Gestione PDF:**
+- `POST /pdf/upload` - Caricamento e indicizzazione singolo PDF
+- `POST /pdf/index-all` - Indicizzazione batch di tutti i PDF
+- `POST /pdf/search` - Ricerca semantica con filtri e paginazione
+- `GET /pdf/list` - Lista PDF indicizzati con metadati
+- `DELETE /pdf/{filename}` - Eliminazione PDF e relativi vettori
+- `POST /pdf/reindex/{filename}` - Re-indicizzazione singolo PDF
+
+**Gestione Note Semantiche:**
+- `POST /semantic/ingest` - Inserimento note nella collezione dedicata
+- `POST /semantic/search` - Ricerca nelle note semantiche
+
+**Sistema:**
+- `GET /health` - Controllo stato del sistema e connessione Qdrant
+- `POST /collections` - Creazione collezioni Qdrant
+
+#### Elaborazione dei Documenti
+
+**Estrazione del Testo:**
+- Utilizzo di PyMuPDF per l'estrazione del testo dai PDF
+- Gestione per-pagina per mantenere i riferimenti alla pagina sorgente
+- Pulizia e normalizzazione del testo estratto
+
+**Chunking Intelligente:**
+- Strategia a priorità: paragrafi → frasi → spazi → split forzato
+- Chunk minimi di 100 caratteri per mantenere il contesto
+- Preservazione della completezza del testo (round-trip property)
+
+**Generazione Embeddings:**
+- Modello `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+- Cache LRU per ottimizzare le performance
+- Supporto multilingue (italiano/inglese)
+
+### Database Vettoriale (Qdrant)
+
+#### Collezioni
+
+**Collezione "pdfs":**
+- Vettori dei chunk di testo estratti dai PDF
+- Payload con metadati: filename, page_number, chunk_index, indexed_at
+- Dimensione vettore: 384 (dimensione del modello MiniLM)
+
+**Collezione "notes":**
+- Vettori delle note semantiche inserite dall'utente
+- Gestione additiva (no ricreazione della collezione)
+
+#### Strategia di Indicizzazione
+
+- UUID deterministici basati su filename e chunk_index per idempotenza
+- Upsert per evitare duplicati durante la re-indicizzazione
+- Metadati completi nel payload per evitare join con database esterni
+
+### Flusso dei Dati
+
+#### Caricamento PDF
+
+```mermaid
+sequenceDiagram
+    participant U as Utente
+    participant F as Frontend
+    participant B as Backend
+    participant Q as Qdrant
+    participant FS as FileSystem
+
+    U->>F: Carica PDF
+    F->>B: POST /pdf/upload
+    B->>FS: Salva PDF in static/pdf-source/
+    B->>B: Estrai testo per pagina
+    B->>B: Chunking intelligente
+    B->>B: Genera embeddings
+    B->>Q: Upsert vettori con metadati
+    B->>F: Conferma successo
+    F->>U: Mostra risultato
+```
+
+#### Ricerca Semantica
+
+```mermaid
+sequenceDiagram
+    participant U as Utente
+    participant F as Frontend
+    participant B as Backend
+    participant Q as Qdrant
+
+    U->>F: Inserisce query di ricerca
+    F->>B: POST /pdf/search
+    B->>B: Genera embedding della query
+    B->>Q: Ricerca vettoriale
+    Q->>B: Risultati con score
+    B->>B: Applica filtri e keyword boost
+    B->>B: Paginazione e ordinamento
+    B->>F: Risultati formattati
+    F->>F: Evidenziazione termini
+    F->>U: Mostra risultati
+```
+
+### Configurazione e Deployment
+
+#### Variabili d'Ambiente
+
+**Frontend (.env):**
+- `PUBLIC_BACKEND_URL` - URL del backend (default: http://127.0.0.1:8000)
+
+**Backend (.env):**
+- `QDRANT_URL` - URL del server Qdrant (default: http://localhost:6333)
+- `QDRANT_API_KEY` - Chiave API per Qdrant (opzionale)
+- `CORS_ORIGINS` - Origini CORS consentite (comma-separated)
+
+#### Modalità di Deployment
+
+**Sviluppo Locale:**
+- Frontend: `npm run dev` (porta 5173)
+- Backend: `uvicorn app.main:app --reload` (porta 8000)
+- Qdrant: embedded o Docker container
+
+**Produzione:**
+- Frontend: build statico servito da web server
+- Backend: server ASGI (Gunicorn + Uvicorn)
+- Qdrant: istanza dedicata con persistenza
+
+### Sicurezza e Performance
+
+#### Sicurezza
+
+- Sanitizzazione HTML per prevenire XSS negli highlight
+- Validazione input con Pydantic
+- CORS configurabile per ambienti diversi
+- Nessuna esposizione di dati sensibili nei log
+
+#### Performance
+
+- Cache LRU per modelli di embedding
+- Chunking ottimizzato per bilanciare qualità e velocità
+- Paginazione per gestire grandi dataset
+- Timeout configurabili per le richieste HTTP
+- Indicizzazione batch per elaborazione efficiente
+
+#### Monitoraggio
+
+- Endpoint `/health` per controllo stato sistema
+- Indicatore visuale di connettività nel frontend
+- Gestione graceful degli errori con messaggi informativi
+- Logging strutturato per debugging

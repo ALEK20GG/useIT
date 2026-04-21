@@ -333,7 +333,7 @@
 	<title>Gestione PDF – UseIt</title>
 </svelte:head>
 
-<main class="page">
+<main class="page page-transition">
 	<section class="hero">
 		<div class="hero-text">
 			<h1>Gestione PDF</h1>
@@ -355,9 +355,23 @@
 				<div
 					class="dropzone"
 					class:is-dragging={isDragging}
+					role="button"
+					tabindex="0"
+					aria-label="Area di caricamento PDF - trascina qui i file o clicca per selezionare"
 					on:dragover|preventDefault={onDragOver}
 					on:dragleave={onDragLeave}
 					on:drop={onDrop}
+					on:keydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+							fileInput?.click();
+						}
+					}}
+					on:click={() => {
+						const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+						fileInput?.click();
+					}}
 				>
 					<div class="dropzone-inner">
 						{#if selectedFile}
@@ -376,7 +390,7 @@
 								oppure
 							</p>
 
-							<label class="button secondary">
+							<label class="btn btn-secondary">
 								Scegli file
 								<input type="file" accept=".pdf,application/pdf" on:change={onFileChange} />
 							</label>
@@ -387,11 +401,16 @@
 				<div class="side-card">
 					<h2>Caricamento</h2>
 					<button
-						class="button primary"
+						class="btn btn-primary"
 						on:click|preventDefault={uploadPDF}
 						disabled={uploadLoading || !selectedFile}
 					>
-						{uploadLoading ? 'Caricamento...' : 'Carica PDF'}
+						{#if uploadLoading}
+							<span class="spinner spinner-sm"></span>
+							<span>Caricamento...</span>
+						{:else}
+							Carica PDF
+						{/if}
 					</button>
 
 					{#if uploadMessage}
@@ -406,11 +425,16 @@
 					<h3>Indicizza PDF esistenti</h3>
 					<p class="muted">Indicizza tutti i PDF già presenti nella cartella pdf-source</p>
 					<button
-						class="button secondary"
+						class="btn btn-secondary"
 						on:click|preventDefault={indexAllPDFs}
 						disabled={indexLoading}
 					>
-						{indexLoading ? 'Indicizzazione...' : 'Indicizza tutti i PDF'}
+						{#if indexLoading}
+							<span class="spinner spinner-sm"></span>
+							<span>Indicizzazione...</span>
+						{:else}
+							Indicizza tutti i PDF
+						{/if}
 					</button>
 
 					{#if indexMessage}
@@ -447,11 +471,16 @@
 					</label>
 
 					<button
-						class="button primary"
+						class="btn btn-primary"
 						on:click|preventDefault={() => searchPDFs(0)}
 						disabled={searchLoading || !searchQuery.trim()}
 					>
-						{searchLoading ? 'Ricerca...' : 'Cerca'}
+						{#if searchLoading}
+							<span class="spinner spinner-sm"></span>
+							<span>Ricerca...</span>
+						{:else}
+							Cerca
+						{/if}
 					</button>
 				</div>
 
@@ -461,11 +490,11 @@
 			</div>
 
 			{#if searchResults.length > 0}
-				<div class="results">
+				<div class="results fade-in">
 					<h2>Risultati ({searchTotal})</h2>
 					<div class="results-grid">
-						{#each searchResults as result}
-							<div class="result-card">
+						{#each searchResults as result, index}
+							<div class="result-card scale-in" style="animation-delay: {index * 0.05}s;">
 								<div class="result-header">
 									<h3>{result.filename}</h3>
 									<span class="score">{(result.score * 100).toFixed(1)}%</span>
@@ -475,18 +504,22 @@
 								{/if}
 								<p class="preview-text">{@html highlightQuery(result.preview_text, searchQuery)}...</p>
 								<div class="result-actions">
-									<button class="button small" on:click={() => openPreview(result.relative_url)}>
+									<button class="btn btn-sm" on:click={() => openPreview(result.relative_url)}>
 										👁️ Preview
 									</button>
-									<button class="button small secondary" on:click={() => openPdfInNewTab(result.relative_url)}>
+									<button class="btn btn-secondary btn-sm" on:click={() => openPdfInNewTab(result.relative_url)}>
 										📄 Apri in nuova scheda
 									</button>
 									<button
-										class="button small danger"
+										class="btn btn-error btn-sm"
 										on:click={() => deleteSearchResult(result.filename)}
 										disabled={deletingResultFiles.has(result.filename)}
 									>
-										{deletingResultFiles.has(result.filename) ? '...' : '🗑️'}
+										{#if deletingResultFiles.has(result.filename)}
+											<span class="spinner spinner-sm"></span>
+										{:else}
+											🗑️
+										{/if}
 									</button>
 								</div>
 							</div>
@@ -494,7 +527,7 @@
 					</div>
 					<div class="pagination">
 						<button
-							class="button secondary small"
+							class="btn btn-secondary btn-sm"
 							on:click={() => searchPDFs(searchOffset - searchLimit)}
 							disabled={searchOffset === 0 || searchLoading}
 						>
@@ -504,7 +537,7 @@
 							{searchOffset + 1}–{Math.min(searchOffset + searchLimit, searchTotal)} di {searchTotal}
 						</span>
 						<button
-							class="button secondary small"
+							class="btn btn-secondary btn-sm"
 							on:click={() => searchPDFs(searchOffset + searchLimit)}
 							disabled={searchOffset + searchLimit >= searchTotal || searchLoading}
 						>
@@ -517,33 +550,45 @@
 	{:else if currentTab === 'library'}
 		<section class="library-section">
 			{#if libraryLoading}
-				<p class="muted">Caricamento libreria...</p>
+				<div class="loading-container">
+					<span class="spinner spinner-lg"></span>
+					<p class="muted">Caricamento libreria...</p>
+				</div>
 			{:else if libraryError}
 				<p class="status error">{libraryError}</p>
 			{:else if libraryPdfs.length === 0}
 				<p class="muted">Nessun PDF indicizzato.</p>
 			{:else}
-				<div class="library-list">
-					{#each libraryPdfs as pdf}
-						<div class="library-item">
+				<div class="library-list fade-in">
+					{#each libraryPdfs as pdf, index}
+						<div class="library-item scale-in" style="animation-delay: {index * 0.05}s;">
 							<div class="library-info">
 								<strong>{pdf.filename}</strong>
 								<span class="muted">{pdf.chunk_count} chunk · {new Date(pdf.indexed_at).toLocaleDateString('it-IT')}</span>
 							</div>
 							<div class="library-actions">
 								<button
-									class="button small secondary"
+									class="btn btn-secondary btn-sm"
 									on:click={() => reindexPdf(pdf.filename)}
 									disabled={reindexingFiles.has(pdf.filename)}
 								>
-									{reindexingFiles.has(pdf.filename) ? 'Re-indicizzazione...' : 'Re-indicizza'}
+									{#if reindexingFiles.has(pdf.filename)}
+										<span class="spinner spinner-sm"></span>
+										<span>Re-indicizzazione...</span>
+									{:else}
+										Re-indicizza
+									{/if}
 								</button>
 								<button
-									class="button small danger"
+									class="btn btn-error btn-sm"
 									on:click={() => deleteFromLibrary(pdf.filename)}
 									disabled={deletingFiles.has(pdf.filename)}
 								>
-									{deletingFiles.has(pdf.filename) ? 'Eliminazione...' : '🗑️ Elimina'}
+									{#if deletingFiles.has(pdf.filename)}
+										<span class="spinner spinner-sm"></span>
+									{:else}
+										🗑️ Elimina
+									{/if}
 								</button>
 							</div>
 						</div>
@@ -555,19 +600,48 @@
 </main>
 
 {#if showPreview && previewPdf}
-	<div class="modal-overlay" on:click={closePreview} on:keydown={(e) => e.key === 'Escape' && closePreview()}>
-		<div class="modal-content" on:click|stopPropagation>
+	<div 
+		class="modal-overlay fade-in" 
+		role="dialog" 
+		aria-modal="true" 
+		aria-label="Anteprima PDF"
+		tabindex="-1"
+		on:click={closePreview} 
+		on:keydown={(e) => {
+			if (e.key === 'Escape') {
+				closePreview();
+			} else if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				closePreview();
+			}
+		}}
+	>
+		<div class="modal-content slide-in-up" role="document">
 			<div class="modal-header">
 				<h2>Anteprima PDF</h2>
-				<button class="close-button" on:click={closePreview}>✕</button>
+				<button 
+					class="close-button" 
+					on:click={closePreview}
+					on:keydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							closePreview();
+						}
+					}}
+					aria-label="Chiudi anteprima PDF"
+				>✕</button>
 			</div>
 			<div class="modal-body">
-				<iframe src={previewPdf} class="pdf-preview"></iframe>
+				<iframe 
+					src={previewPdf} 
+					class="pdf-preview" 
+					title="Anteprima del documento PDF - {previewPdf ? previewPdf.split('/').pop()?.replace('.pdf', '') || 'documento' : 'documento'}"
+				></iframe>
 				<div class="modal-actions">
-					<button class="button primary" on:click={() => openPdfInNewTab(previewPdf!)}>
+					<button class="btn btn-primary" on:click={() => openPdfInNewTab(previewPdf!)}>
 						Apri in nuova scheda
 					</button>
-					<button class="button secondary" on:click={closePreview}>Chiudi</button>
+					<button class="btn btn-secondary" on:click={closePreview}>Chiudi</button>
 				</div>
 			</div>
 		</div>
@@ -578,11 +652,11 @@
 	:global(.page) {
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem;
+		padding: var(--space-8) var(--space-6);
 	}
 
 	.hero {
-		margin-bottom: 3rem;
+		margin-bottom: var(--space-12);
 	}
 
 	.hero-text {
@@ -590,37 +664,41 @@
 	}
 
 	.hero-text h1 {
-		font-size: 2.5rem;
-		font-weight: 700;
-		margin-bottom: 1rem;
+		font-size: var(--font-size-5xl);
+		font-weight: var(--font-weight-bold);
+		line-height: var(--line-height-tight);
+		letter-spacing: var(--letter-spacing-tight);
+		margin-bottom: var(--space-4);
 		color: var(--color-text);
 	}
 
 	.hero-text p {
-		font-size: 1.125rem;
+		font-size: var(--font-size-lg);
+		line-height: var(--line-height-relaxed);
 		color: var(--color-text-muted);
 	}
 
 	.tabs-section {
-		margin-bottom: 2rem;
+		margin-bottom: var(--space-8);
 		border-bottom: 2px solid var(--color-border);
 	}
 
 	.tabs {
 		display: flex;
-		gap: 1rem;
+		gap: var(--space-4);
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: 0 1.5rem;
+		padding: 0 var(--space-6);
 	}
 
 	.tab-button {
-		padding: 0.75rem 1.5rem;
+		padding: var(--space-3) var(--space-6);
 		border: none;
 		background: transparent;
 		color: var(--color-text-muted);
-		font-weight: 500;
-		font-size: 1rem;
+		font-weight: var(--font-weight-medium);
+		font-size: var(--font-size-base);
+		line-height: var(--line-height-normal);
 		cursor: pointer;
 		border-bottom: 2px solid transparent;
 		margin-bottom: -2px;
@@ -639,17 +717,23 @@
 	.layout {
 		display: grid;
 		grid-template-columns: 1fr 400px;
-		gap: 2rem;
-		margin-top: 2rem;
+		gap: var(--space-8);
+		margin-top: var(--space-8);
 	}
 
 	.dropzone {
 		border: 2px dashed var(--color-border);
-		border-radius: 12px;
-		padding: 3rem 2rem;
+		border-radius: var(--space-3);
+		padding: var(--space-12) var(--space-8);
 		text-align: center;
 		transition: all 0.3s ease;
 		background: var(--color-bg-secondary);
+		cursor: pointer;
+	}
+
+	.dropzone:focus {
+		outline: 2px solid #4f46e5;
+		outline-offset: var(--space-1);
 	}
 
 	.dropzone.is-dragging {
@@ -661,34 +745,34 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1.5rem;
+		gap: var(--space-6);
 	}
 
 	.placeholder-icon {
-		font-size: 4rem;
-		margin-bottom: 0.5rem;
+		font-size: var(--font-size-5xl);
+		margin-bottom: var(--space-2);
 	}
 
 	.file-info {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 
 	.file-icon {
-		font-size: 3rem;
+		font-size: var(--font-size-4xl);
 	}
 
 	.file-name {
-		font-weight: 600;
+		font-weight: var(--font-weight-semibold);
 		color: var(--color-text);
 		margin: 0;
 	}
 
 	.file-size {
 		color: var(--color-text-muted);
-		font-size: 0.875rem;
+		font-size: var(--font-size-sm);
 		margin: 0;
 	}
 
@@ -696,55 +780,13 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
+		gap: var(--space-4);
 	}
 
 	.instructions p {
 		margin: 0;
 		color: var(--color-text-muted);
-	}
-
-	.button {
-		padding: 0.75rem 1.5rem;
-		border: none;
-		border-radius: 8px;
-		font-size: 1rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s;
-		text-decoration: none;
-		display: inline-block;
-	}
-
-	.button.primary {
-		background: linear-gradient(135deg, #4f46e5, #6366f1);
-		color: white;
-	}
-
-	.button.primary:hover:not(:disabled) {
-		background: linear-gradient(135deg, #4338ca, #5855eb);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-	}
-
-	.button.primary:disabled {
-		background: #d1d5db;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	.button.secondary {
-		background: #6b7280;
-		color: white;
-	}
-
-	.button.secondary:hover:not(:disabled) {
-		background: #4b5563;
-	}
-
-	.button.small {
-		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
+		line-height: var(--line-height-relaxed);
 	}
 
 	input[type='file'] {
@@ -753,40 +795,44 @@
 
 	.side-card {
 		background: var(--color-card-bg);
-		padding: 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 1px 3px var(--color-shadow);
+		padding: var(--space-6);
+		border-radius: var(--space-3);
+		box-shadow: 0 1px var(--space-1) var(--color-shadow);
 		height: fit-content;
 	}
 
 	.side-card h2,
 	.side-card h3 {
 		margin-top: 0;
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-4);
 		color: var(--color-text);
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-snug);
 	}
 
-	.side-card .button {
+	.side-card .btn {
 		width: 100%;
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-4);
 	}
 
 	.divider {
 		height: 1px;
 		background: var(--color-border);
-		margin: 1.5rem 0;
+		margin: var(--space-6) 0;
 	}
 
 	.muted {
 		color: var(--color-text-muted);
-		font-size: 0.875rem;
-		margin-bottom: 1rem;
+		font-size: var(--font-size-sm);
+		line-height: var(--line-height-relaxed);
+		margin-bottom: var(--space-4);
 	}
 
 	.status {
-		padding: 0.75rem;
-		border-radius: 8px;
-		margin-top: 1rem;
+		padding: var(--space-3);
+		border-radius: var(--space-2);
+		margin-top: var(--space-4);
 	}
 
 	.status.success {
@@ -803,16 +849,16 @@
 
 	/* Search Section */
 	.search-section {
-		margin-top: 2rem;
+		margin-top: var(--space-8);
 	}
 
 	.search-form-container {
-		margin-bottom: 2rem;
+		margin-bottom: var(--space-8);
 	}
 
 	.search-form {
 		display: flex;
-		gap: 1rem;
+		gap: var(--space-4);
 		align-items: flex-end;
 	}
 
@@ -820,20 +866,22 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 
 	.search-form label span {
-		font-weight: 500;
+		font-weight: var(--font-weight-medium);
 		color: var(--color-text);
-		font-size: 0.875rem;
+		font-size: var(--font-size-sm);
+		line-height: var(--line-height-normal);
 	}
 
 	.search-form input[type='text'] {
-		padding: 0.75rem;
+		padding: var(--space-3);
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		font-size: 1rem;
+		border-radius: var(--space-2);
+		font-size: var(--font-size-base);
+		line-height: var(--line-height-normal);
 		background: var(--color-input-bg);
 		color: var(--color-text);
 		transition: border-color 0.2s;
@@ -842,50 +890,54 @@
 	.search-form input[type='text']:focus {
 		outline: none;
 		border-color: #4f46e5;
-		box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+		box-shadow: 0 0 0 var(--space-1) rgba(79, 70, 229, 0.1);
 	}
 
 	.results {
-		margin-top: 2rem;
+		margin-top: var(--space-8);
 	}
 
 	.results h2 {
-		margin-bottom: 1.5rem;
+		margin-bottom: var(--space-6);
 		color: var(--color-text);
+		font-size: var(--font-size-2xl);
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-snug);
 	}
 
 	.results-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-		gap: 1.5rem;
+		gap: var(--space-6);
 	}
 
 	.result-card {
 		background: var(--color-card-bg);
-		padding: 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 1px 3px var(--color-shadow);
+		padding: var(--space-6);
+		border-radius: var(--space-3);
+		box-shadow: 0 1px var(--space-1) var(--color-shadow);
 		transition: transform 0.2s, box-shadow 0.2s;
 	}
 
 	.result-card:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 var(--space-1) var(--space-3) rgba(0, 0, 0, 0.15);
 	}
 
 	.result-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: 1rem;
-		gap: 1rem;
+		margin-bottom: var(--space-4);
+		gap: var(--space-4);
 	}
 
 	.result-header h3 {
 		margin: 0;
-		font-size: 1rem;
+		font-size: var(--font-size-base);
 		color: #4f46e5;
-		font-weight: 600;
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-snug);
 		flex: 1;
 		word-break: break-word;
 	}
@@ -893,27 +945,28 @@
 	.score {
 		background: linear-gradient(135deg, #4f46e5, #6366f1);
 		color: white;
-		padding: 0.25rem 0.75rem;
-		border-radius: 12px;
-		font-size: 0.75rem;
-		font-weight: 600;
+		padding: var(--space-1) var(--space-3);
+		border-radius: var(--space-3);
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-tight);
 		white-space: nowrap;
 	}
 
 	.preview-text {
 		color: var(--color-text-muted);
-		margin: 0 0 1rem 0;
-		line-height: 1.6;
-		font-size: 0.875rem;
+		margin: 0 0 var(--space-4) 0;
+		line-height: var(--line-height-relaxed);
+		font-size: var(--font-size-sm);
 	}
 
 	.result-actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		flex-wrap: wrap;
 	}
 
-	.result-actions .button {
+	.result-actions .btn {
 		flex: 1;
 		min-width: 120px;
 	}
@@ -930,12 +983,12 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		padding: 2rem;
+		padding: var(--space-8);
 	}
 
 	.modal-content {
 		background: var(--color-card-bg);
-		border-radius: 12px;
+		border-radius: var(--space-3);
 		width: 100%;
 		max-width: 900px;
 		max-height: 90vh;
@@ -947,19 +1000,22 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1.5rem;
+		padding: var(--space-6);
 		border-bottom: 1px solid var(--color-border);
 	}
 
 	.modal-header h2 {
 		margin: 0;
 		color: var(--color-text);
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-snug);
 	}
 
 	.close-button {
 		background: none;
 		border: none;
-		font-size: 1.5rem;
+		font-size: var(--font-size-xl);
 		cursor: pointer;
 		color: var(--color-text-muted);
 		padding: 0;
@@ -968,7 +1024,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 4px;
+		border-radius: var(--space-1);
 		transition: background-color 0.2s;
 	}
 
@@ -977,7 +1033,7 @@
 	}
 
 	.modal-body {
-		padding: 1.5rem;
+		padding: var(--space-6);
 		flex: 1;
 		overflow: auto;
 		display: flex;
@@ -988,27 +1044,60 @@
 		width: 100%;
 		height: 600px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		margin-bottom: 1rem;
+		border-radius: var(--space-2);
+		margin-bottom: var(--space-4);
 	}
 
 	.modal-actions {
 		display: flex;
-		gap: 1rem;
+		gap: var(--space-4);
 		justify-content: flex-end;
 	}
 
 	@media (max-width: 768px) {
+		:global(.page) {
+			padding: var(--space-6) var(--space-4);
+		}
+
+		.hero {
+			margin-bottom: var(--space-8);
+		}
+
+		.hero-text h1 {
+			font-size: var(--font-size-3xl);
+		}
+
+		.tabs {
+			padding: 0 var(--space-4);
+			gap: var(--space-2);
+		}
+
+		.tab-button {
+			padding: var(--space-2) var(--space-4);
+			font-size: var(--font-size-sm);
+		}
+
 		.layout {
 			grid-template-columns: 1fr;
+			gap: var(--space-6);
+		}
+
+		.dropzone {
+			padding: var(--space-8) var(--space-4);
 		}
 
 		.search-form {
 			flex-direction: column;
+			gap: var(--space-4);
 		}
 
 		.results-grid {
 			grid-template-columns: 1fr;
+			gap: var(--space-4);
+		}
+
+		.modal-overlay {
+			padding: var(--space-4);
 		}
 
 		.modal-content {
@@ -1018,6 +1107,11 @@
 			border-radius: 0;
 		}
 
+		.modal-header,
+		.modal-body {
+			padding: var(--space-4);
+		}
+
 		.pdf-preview {
 			height: 400px;
 		}
@@ -1025,6 +1119,7 @@
 		.library-item {
 			flex-direction: column;
 			align-items: flex-start;
+			padding: var(--space-4);
 		}
 
 		.library-actions {
@@ -1034,9 +1129,10 @@
 
 		.pagination {
 			flex-wrap: wrap;
+			gap: var(--space-2);
 		}
 
-		.button,
+		.btn,
 		:global(button),
 		:global(input[type='text']),
 		:global(input[type='file']) {
@@ -1046,70 +1142,72 @@
 
 	/* Library Section */
 	.library-section {
-		margin-top: 2rem;
+		margin-top: var(--space-8);
+	}
+
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-4);
+		padding: var(--space-12);
 	}
 
 	.library-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: var(--space-3);
 	}
 
 	.library-item {
 		background: var(--color-card-bg);
-		padding: 1rem 1.5rem;
-		border-radius: 8px;
-		box-shadow: 0 1px 3px var(--color-shadow);
+		padding: var(--space-4) var(--space-6);
+		border-radius: var(--space-2);
+		box-shadow: 0 1px var(--space-1) var(--color-shadow);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		gap: 1rem;
+		gap: var(--space-4);
 	}
 
 	.library-info {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 
 	.library-actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		flex-shrink: 0;
 	}
 
-	.button.danger {
-		background: #ef4444;
-		color: white;
-	}
-
-	.button.danger:hover:not(:disabled) {
-		background: #dc2626;
-	}
-
 	.page-number {
-		font-size: 0.75rem;
-		color: #4f46e5;
-		font-weight: 500;
-		margin: 0 0 0.5rem 0;
+		font-size: var(--font-size-xs);
+		color: var(--color-primary);
+		font-weight: var(--font-weight-medium);
+		line-height: var(--line-height-tight);
+		margin: 0 0 var(--space-2) 0;
 	}
 
 	.pagination {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 1rem;
-		margin-top: 2rem;
+		gap: var(--space-4);
+		margin-top: var(--space-8);
 	}
 
 	.pagination-info {
 		color: var(--color-text-muted);
-		font-size: 0.875rem;
+		font-size: var(--font-size-sm);
+		line-height: var(--line-height-normal);
 	}
 
 	:global(mark) {
-		background-color: #fef08a;
-		color: #111827;
+		background-color: var(--color-warning-subtle);
+		color: var(--color-warning-active);
 		border-radius: 2px;
 		padding: 0 1px;
 	}

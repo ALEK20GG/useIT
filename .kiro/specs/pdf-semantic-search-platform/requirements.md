@@ -266,3 +266,67 @@ The system is multilingual (Italian + English) and runs locally with an embedded
 6. WHEN the user clicks "Previous", THE Frontend SHALL decrement the offset by `limit` (minimum 0) and re-run the search.
 7. WHEN on the first page, THE Frontend SHALL disable the "Previous" button.
 8. WHEN on the last page (offset + limit >= total), THE Frontend SHALL disable the "Next" button.
+
+---
+
+### Requirement 20: Fix accessibility violations for drag and drop elements
+
+**User Story:** As a user with assistive technology, I want drag and drop areas to have proper ARIA roles, so that I can understand their purpose and interact with them effectively.
+
+#### Acceptance Criteria
+
+1. THE Frontend SHALL add `role="button"` to all `<div>` elements that have `on:dragover`, `on:dragleave`, or `on:drop` event handlers in `frontend/src/routes/pdf/+page.svelte` and `frontend/src/routes/analyze/+page.svelte`.
+2. THE Frontend SHALL add `tabindex="0"` to make drag and drop areas keyboard accessible.
+3. THE Frontend SHALL add appropriate `aria-label` attributes describing the drag and drop functionality (e.g., "Area di caricamento PDF - trascina qui i file o clicca per selezionare").
+
+---
+
+### Requirement 21: Fix accessibility violations for clickable elements
+
+**User Story:** As a user with assistive technology, I want all clickable elements to have proper ARIA roles and keyboard support, so that I can navigate and interact with the interface using keyboard or screen readers.
+
+#### Acceptance Criteria
+
+1. THE Frontend SHALL add `role="button"` to all `<div>` elements that have `on:click` event handlers but are not semantic buttons.
+2. THE Frontend SHALL add keyboard event handlers (`on:keydown`) to all non-interactive elements with `on:click` handlers to support Enter and Space key activation.
+3. THE Frontend SHALL ensure all clickable elements have appropriate `tabindex` values for keyboard navigation.
+4. THE Frontend SHALL add descriptive `aria-label` attributes to elements where the visual context may not be clear to screen readers.
+
+---
+
+### Requirement 22: Fix iframe accessibility violation
+
+**User Story:** As a user with assistive technology, I want iframe elements to have descriptive titles, so that I can understand their content and purpose.
+
+#### Acceptance Criteria
+
+1. THE Frontend SHALL add a `title` attribute to the `<iframe>` element in the PDF preview modal in `frontend/src/routes/pdf/+page.svelte`.
+2. THE Frontend SHALL set the title to a descriptive value such as "Anteprima del documento PDF" or dynamically include the PDF filename.
+
+---
+
+### Requirement 23: Improve visual design and user interface
+
+**User Story:** As a user, I want the application to have an improved visual design, so that it is more pleasant and professional to use.
+
+#### Acceptance Criteria
+
+1. THE Frontend SHALL implement improved color schemes with better contrast ratios for both light and dark modes.
+2. THE Frontend SHALL enhance button styles with better hover states, focus indicators, and visual hierarchy.
+3. THE Frontend SHALL improve spacing, typography, and layout consistency across all pages.
+4. THE Frontend SHALL add subtle animations and transitions to improve user experience without affecting accessibility.
+5. THE Frontend SHALL ensure all interactive elements have clear visual feedback for hover, focus, and active states.
+
+---
+
+### Requirement 24: Architecture documentation and explanation
+
+**User Story:** As a developer or user, I want clear documentation explaining what each section of the application does, so that I can understand the system architecture and functionality.
+
+#### Acceptance Criteria
+
+1. THE System SHALL provide comprehensive documentation explaining the purpose and functionality of each major component.
+2. THE Documentation SHALL include explanations of the frontend structure (SvelteKit routes and components).
+3. THE Documentation SHALL include explanations of the backend structure (FastAPI endpoints and services).
+4. THE Documentation SHALL include explanations of the data flow between frontend, backend, and Qdrant database.
+5. THE Documentation SHALL be written in Italian to match the application's primary language.

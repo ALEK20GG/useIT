@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Color System</title>
+    <link rel="stylesheet" href="./styles/design-system.css">
+    <style>
+        /* Import the color system from layout */
+        :root {
+            /* Base colors - Light mode */
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f8fafc;
+            --color-bg-tertiary: #f1f5f9;
+            --color-text: #0f172a;
+            --color-text-muted: #475569;
+            --color-text-subtle: #64748b;
+            --color-border: #e2e8f0;
+            --color-border-subtle: #f1f5f9;
+            --color-shadow: rgba(15, 23, 42, 0.08);
+            --color-shadow-medium: rgba(15, 23, 42, 0.12);
+            --color-shadow-strong: rgba(15, 23, 42, 0.16);
+            
+            /* Semantic color tokens - Light mode */
+            --color-primary: #2563eb;
+            --color-primary-hover: #1d4ed8;
+            --color-primary-active: #1e40af;
+            --color-primary-subtle: #dbeafe;
+            --color-primary-muted: #93c5fd;
+            
+            --color-secondary: #64748b;
+            --color-secondary-hover: #475569;
+            --color-secondary-active: #334155;
+            --color-secondary-subtle: #f1f5f9;
+            --color-secondary-muted: #cbd5e1;
+            
+            --color-success: #059669;
+            --color-success-hover: #047857;
+            --color-success-active: #065f46;
+            --color-success-subtle: #d1fae5;
+            --color-success-muted: #6ee7b7;
+            
+            --color-warning: #d97706;
+            --color-warning-hover: #b45309;
+            --color-warning-active: #92400e;
+            --color-warning-subtle: #fef3c7;
+            --color-warning-muted: #fbbf24;
+            
+            --color-error: #dc2626;
+            --color-error-hover: #b91c1c;
+            --color-error-active: #991b1b;
+            --color-error-subtle: #fee2e2;
+            --color-error-muted: #f87171;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Base colors - Dark mode */
+                --color-bg: #0f172a;
+                --color-bg-secondary: #1e293b;
+                --color-bg-tertiary: #334155;
+                --color-text: #f8fafc;
+                --color-text-muted: #cbd5e1;
+                --color-text-subtle: #94a3b8;
+                --color-border: #475569;
+                --color-border-subtle: #334155;
+                --color-shadow: rgba(0, 0, 0, 0.3);
+                --color-shadow-medium: rgba(0, 0, 0, 0.4);
+                --color-shadow-strong: rgba(0, 0, 0, 0.5);
+                
+                /* Semantic color tokens - Dark mode */
+                --color-primary: #3b82f6;
+                --color-primary-hover: #60a5fa;
+                --color-primary-active: #2563eb;
+                --color-primary-subtle: #1e3a8a;
+                --color-primary-muted: #1d4ed8;
+                
+                --color-secondary: #94a3b8;
+                --color-secondary-hover: #cbd5e1;
+                --color-secondary-active: #e2e8f0;
+                --color-secondary-subtle: #334155;
+                --color-secondary-muted: #64748b;
+                
+                --color-success: #10b981;
+                --color-success-hover: #34d399;
+                --color-success-active: #059669;
+                --color-success-subtle: #064e3b;
+                --color-success-muted: #047857;
+                
+                --color-warning: #f59e0b;
+                --color-warning-hover: #fbbf24;
+                --color-warning-active: #d97706;
+                --color-warning-subtle: #78350f;
+                --color-warning-muted: #b45309;
+                
+                --color-error: #ef4444;
+                --color-error-hover: #f87171;
+                --color-error-active: #dc2626;
+                --color-error-subtle: #7f1d1d;
+                --color-error-muted: #b91c1c;
+            }
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .test-section {
+            margin-bottom: 3rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .color-sample {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--color-border);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test del Sistema di Colori</h1>
+    
+    <div class="test-section">
+        <h2>Semantic Color Tokens</h2>
+        <div class="color-grid">
+            <div class="color-sample" style="background: var(--color-primary); color: white;">
+                Primary<br>
+                <small>--color-primary</small>
+            </div>
+            <div class="color-sample" style="background: var(--color-secondary); color: white;">
+                Secondary<br>
+                <small>--color-secondary</small>
+            </div>
+            <div class="color-sample" style="background: var(--color-success); color: white;">
+                Success<br>
+                <small>--color-success</small>
+            </div>
+            <div class="color-sample" style="background: var(--color-warning); color: white;">
+                Warning<br>
+                <small>--color-warning</small>
+            </div>
+            <div class="color-sample" style="background: var(--color-error); color: white;">
+                Error<br>
+                <small>--color-error</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Button Components</h2>
+        <div class="button-grid">
+            <button class="btn btn-primary">Primary</button>
+            <button class="btn btn-secondary">Secondary</button>
+            <button class="btn btn-success">Success</button>
+            <button class="btn btn-warning">Warning</button>
+            <button class="btn btn-error">Error</button>
+        </div>
+        
+        <h3>Button Sizes</h3>
+        <div class="button-grid">
+            <button class="btn btn-primary btn-sm">Small</button>
+            <button class="btn btn-primary">Normal</button>
+            <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Form Controls</h2>
+        <input type="text" class="form-control" placeholder="Test input field" style="margin-bottom: 1rem;">
+        <textarea class="form-control" placeholder="Test textarea" rows="3"></textarea>
+    </div>
+
+    <div class="test-section">
+        <h2>Status Indicators</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            <div class="status-success">Success Status</div>
+            <div class="status-warning">Warning Status</div>
+            <div class="status-error">Error Status</div>
+            <div class="status-info">Info Status</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Cards</h2>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Card Title</h3>
+                <p class="card-subtitle">Card subtitle with muted text</p>
+            </div>
+            <p>This is a test card with the new design system. It should have proper shadows, borders, and hover effects.</p>
+        </div>
+    </div>
+
+    <script>
+        // Test contrast ratios
+        function getContrastRatio(color1, color2) {
+            // This is a simplified version - in real testing you'd use a proper contrast checker
+            console.log(`Testing contrast between ${color1} and ${color2}`);
+        }
+
+        // Test all semantic colors
+        const colors = ['primary', 'secondary', 'success', 'warning', 'error'];
+        colors.forEach(color => {
+            getContrastRatio(`--color-${color}`, '--color-bg');
+        });
+    </script>
+</body>
+</html>
