@@ -1162,3 +1162,269 @@
 	box-shadow: 0 var(--space-1) var(--space-2) var(--color-shadow-medium);
 	transform: translateY(-1px);
 }
+
+/* ===== Print Styles ===== */
+@media print {
+	/* Hide navigation and interactive elements */
+	:global(nav),
+	:global(.navbar),
+	:global(.hamburger-btn),
+	:global(.mobile-menu),
+	:global(.skip-link),
+	:global(.btn),
+	:global(button),
+	:global(.pagination),
+	:global(.modal-overlay) {
+		display: none !important;
+	}
+
+	/* Reset backgrounds and shadows for print */
+	:global(body) {
+		background: white;
+		color: black;
+		font-size: 12pt;
+	}
+
+	:global(.card),
+	:global(.feature-card),
+	:global(.result-card),
+	:global(.library-item) {
+		box-shadow: none;
+		border: 1px solid #ccc;
+		break-inside: avoid;
+	}
+
+	/* Ensure links show their URL */
+	:global(a[href]::after) {
+		content: ' (' attr(href) ')';
+		font-size: 0.8em;
+		color: #555;
+	}
+
+	/* Don't show URL for internal/anchor links */
+	:global(a[href^="#"]::after),
+	:global(a[href^="javascript"]::after) {
+		content: '';
+	}
+
+	/* Page breaks */
+	:global(h1),
+	:global(h2),
+	:global(h3) {
+		break-after: avoid;
+	}
+
+	:global(section) {
+		break-inside: avoid;
+	}
+
+	/* Ensure text is readable */
+	:global(*) {
+		color: black !important;
+		background: white !important;
+		text-shadow: none !important;
+		box-shadow: none !important;
+	}
+
+	:global(a) {
+		color: #000 !important;
+		text-decoration: underline;
+	}
+}
+
+/* ===== Global focus-visible styles (keyboard navigation) ===== */
+/* Ensure all interactive elements have visible focus for keyboard users */
+:global(:focus-visible) {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+/* Remove default focus ring for mouse users (only show for keyboard) */
+:global(:focus:not(:focus-visible)) {
+	outline: none;
+}
+
+/* ===== Danger button alias ===== */
+/* .btn-danger is an alias for .btn-error for semantic clarity */
+:global(.btn-danger) {
+	background-color: var(--color-error);
+	color: white;
+	font-weight: var(--font-weight-medium);
+}
+
+:global(.btn-danger:hover:not(:disabled)) {
+	background-color: var(--color-error-hover);
+	box-shadow: 0 6px 20px rgba(220, 38, 38, 0.25);
+}
+
+:global(.btn-danger:active:not(:disabled)) {
+	background-color: var(--color-error-active);
+}
+
+:global(.btn-danger:focus-visible) {
+	outline-color: var(--color-error);
+	box-shadow: 0 0 0 4px var(--color-error-subtle), 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+/* ===== Ghost / outline button variant ===== */
+:global(.btn-ghost) {
+	background-color: transparent;
+	color: var(--color-text-muted);
+	border: 1px solid transparent;
+}
+
+:global(.btn-ghost:hover:not(:disabled)) {
+	background-color: var(--color-bg-secondary);
+	color: var(--color-text);
+	border-color: var(--color-border);
+}
+
+:global(.btn-ghost:focus-visible) {
+	outline-color: var(--color-primary);
+	box-shadow: 0 0 0 4px var(--color-primary-subtle);
+}
+
+/* ===== Icon button variant ===== */
+:global(.btn-icon) {
+	padding: var(--space-2);
+	min-width: 44px;
+	min-height: 44px;
+	border-radius: var(--space-2);
+}
+
+/* ===== Full-width button modifier ===== */
+:global(.btn-block) {
+	width: 100%;
+	justify-content: center;
+}
+
+/* ===== Responsive container utility ===== */
+:global(.container) {
+	width: 100%;
+	max-width: 1200px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: var(--space-6);
+	padding-right: var(--space-6);
+}
+
+@media (max-width: 640px) {
+	:global(.container) {
+		padding-left: var(--space-4);
+		padding-right: var(--space-4);
+	}
+}
+
+/* ===== Responsive grid utilities ===== */
+:global(.grid) {
+	display: grid;
+	gap: var(--space-6);
+}
+
+:global(.grid-cols-1) { grid-template-columns: repeat(1, 1fr); }
+:global(.grid-cols-2) { grid-template-columns: repeat(2, 1fr); }
+:global(.grid-cols-3) { grid-template-columns: repeat(3, 1fr); }
+:global(.grid-cols-4) { grid-template-columns: repeat(4, 1fr); }
+
+@media (min-width: 640px) {
+	:global(.sm\:grid-cols-2) { grid-template-columns: repeat(2, 1fr); }
+	:global(.sm\:grid-cols-3) { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 768px) {
+	:global(.md\:grid-cols-2) { grid-template-columns: repeat(2, 1fr); }
+	:global(.md\:grid-cols-3) { grid-template-columns: repeat(3, 1fr); }
+	:global(.md\:grid-cols-4) { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1024px) {
+	:global(.lg\:grid-cols-3) { grid-template-columns: repeat(3, 1fr); }
+	:global(.lg\:grid-cols-4) { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ===== Flex utilities ===== */
+:global(.flex) { display: flex; }
+:global(.flex-col) { flex-direction: column; }
+:global(.flex-wrap) { flex-wrap: wrap; }
+:global(.items-center) { align-items: center; }
+:global(.items-start) { align-items: flex-start; }
+:global(.items-end) { align-items: flex-end; }
+:global(.justify-center) { justify-content: center; }
+:global(.justify-between) { justify-content: space-between; }
+:global(.justify-end) { justify-content: flex-end; }
+:global(.gap-2) { gap: var(--space-2); }
+:global(.gap-3) { gap: var(--space-3); }
+:global(.gap-4) { gap: var(--space-4); }
+:global(.gap-6) { gap: var(--space-6); }
+:global(.gap-8) { gap: var(--space-8); }
+:global(.flex-1) { flex: 1; }
+:global(.flex-shrink-0) { flex-shrink: 0; }
+
+/* ===== Display utilities ===== */
+:global(.hidden) { display: none; }
+:global(.block) { display: block; }
+:global(.inline-block) { display: inline-block; }
+:global(.inline-flex) { display: inline-flex; }
+
+@media (max-width: 640px) {
+	:global(.sm\:hidden) { display: none; }
+	:global(.sm\:block) { display: block; }
+}
+
+@media (min-width: 641px) {
+	:global(.sm\:flex) { display: flex; }
+}
+
+/* ===== Width utilities ===== */
+:global(.w-full) { width: 100%; }
+:global(.w-auto) { width: auto; }
+:global(.max-w-sm) { max-width: 24rem; }
+:global(.max-w-md) { max-width: 28rem; }
+:global(.max-w-lg) { max-width: 32rem; }
+:global(.max-w-xl) { max-width: 36rem; }
+:global(.max-w-2xl) { max-width: 42rem; }
+:global(.max-w-4xl) { max-width: 56rem; }
+:global(.max-w-6xl) { max-width: 72rem; }
+
+/* ===== Text alignment utilities ===== */
+:global(.text-left) { text-align: left; }
+:global(.text-center) { text-align: center; }
+:global(.text-right) { text-align: right; }
+
+/* ===== Color utilities ===== */
+:global(.text-primary) { color: var(--color-primary); }
+:global(.text-muted) { color: var(--color-text-muted); }
+:global(.text-subtle) { color: var(--color-text-subtle); }
+:global(.text-success) { color: var(--color-success); }
+:global(.text-warning) { color: var(--color-warning); }
+:global(.text-error) { color: var(--color-error); }
+
+:global(.bg-primary) { background-color: var(--color-primary); }
+:global(.bg-secondary) { background-color: var(--color-bg-secondary); }
+:global(.bg-success-subtle) { background-color: var(--color-success-subtle); }
+:global(.bg-warning-subtle) { background-color: var(--color-warning-subtle); }
+:global(.bg-error-subtle) { background-color: var(--color-error-subtle); }
+
+/* ===== Border utilities ===== */
+:global(.border) { border: 1px solid var(--color-border); }
+:global(.border-top) { border-top: 1px solid var(--color-border); }
+:global(.border-bottom) { border-bottom: 1px solid var(--color-border); }
+:global(.rounded) { border-radius: var(--space-2); }
+:global(.rounded-lg) { border-radius: var(--space-3); }
+:global(.rounded-full) { border-radius: 9999px; }
+
+/* ===== Overflow utilities ===== */
+:global(.overflow-hidden) { overflow: hidden; }
+:global(.overflow-auto) { overflow: auto; }
+:global(.overflow-x-auto) { overflow-x: auto; }
+:global(.truncate) {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ===== Position utilities ===== */
+:global(.relative) { position: relative; }
+:global(.absolute) { position: absolute; }
+:global(.sticky) { position: sticky; }
+:global(.inset-0) { top: 0; right: 0; bottom: 0; left: 0; }

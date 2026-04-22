@@ -1,37 +1,148 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import HealthIndicator from '$lib/HealthIndicator.svelte';
+	import OnboardingTour from '$lib/OnboardingTour.svelte';
+	import { loadPersistedLocale } from '$lib/i18n';
 	import '$lib/styles/design-system.css';
 
 	let { children } = $props();
+
+	// Load persisted locale on app init (Requirement 20.5)
+	onMount(() => {
+		loadPersistedLocale();
+	});
+
+	let mobileMenuOpen = $state(false);
+	let menuButtonRef: HTMLButtonElement | null = $state(null);
+	let firstMenuLinkRef: HTMLAnchorElement | null = $state(null);
+
+	function toggleMobileMenu() {
+		mobileMenuOpen = !mobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
+
+	function handleMenuKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			mobileMenuOpen = false;
+			menuButtonRef?.focus();
+		}
+	}
+
+	// Close menu on route change
+	$effect(() => {
+		// Accessing $page.url.pathname triggers re-run on navigation
+		const _ = $page.url.pathname;
+		mobileMenuOpen = false;
+	});
+
+	// Trap focus in mobile menu when open
+	onMount(() => {
+		// nothing needed here; handled via keyboard events
+	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<nav class="navbar">
+<!-- Skip to main content link for keyboard/screen reader users -->
+<a href="#main-content" class="skip-link">Vai al contenuto principale</a>
+
+<nav class="navbar" aria-label="Navigazione principale">
 	<div class="nav-container">
-		<a href="/" class="nav-logo">
-			<span class="logo-icon">📦</span>
+		<a href="/" class="nav-logo" aria-label="UseIt – Home">
+			<span class="logo-icon" aria-hidden="true">📦</span>
 			<span class="logo-text">UseIt</span>
 		</a>
+
+		<!-- Desktop navigation -->
 		<div class="nav-links">
-			<a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a>
-			<a href="/analyze" class="nav-link" class:active={$page.url.pathname === '/analyze'}>Scansiona</a>
-			<a href="/semantic" class="nav-link" class:active={$page.url.pathname === '/semantic'}>Cerca</a>
-			<a href="/pdf" class="nav-link" class:active={$page.url.pathname === '/pdf'}>PDF</a>
+			<a href="/" class="nav-link" class:active={$page.url.pathname === '/'} aria-current={$page.url.pathname === '/' ? 'page' : undefined}>Home</a>
+			<a href="/analyze" class="nav-link" class:active={$page.url.pathname === '/analyze'} aria-current={$page.url.pathname === '/analyze' ? 'page' : undefined}>Scansiona</a>
+			<a href="/semantic" class="nav-link" class:active={$page.url.pathname === '/semantic'} aria-current={$page.url.pathname === '/semantic' ? 'page' : undefined}>Cerca</a>
+			<a href="/pdf" class="nav-link" class:active={$page.url.pathname === '/pdf'} aria-current={$page.url.pathname === '/pdf' ? 'page' : undefined}>PDF</a>
+			<a href="/files" class="nav-link" class:active={$page.url.pathname === '/files'} aria-current={$page.url.pathname === '/files' ? 'page' : undefined}>File</a>
+			<a href="/folders" class="nav-link" class:active={$page.url.pathname.startsWith('/folders')} aria-current={$page.url.pathname.startsWith('/folders') ? 'page' : undefined}>Cartelle</a>
+			<a href="/user" class="nav-link" class:active={$page.url.pathname.startsWith('/user')} aria-current={$page.url.pathname.startsWith('/user') ? 'page' : undefined}>Area Personale</a>
+			<a href="/help" class="nav-link" class:active={$page.url.pathname.startsWith('/help')} aria-current={$page.url.pathname.startsWith('/help') ? 'page' : undefined}>Guida</a>
 			<HealthIndicator />
 		</div>
+
+		<!-- Hamburger button for mobile -->
+		<button
+			bind:this={menuButtonRef}
+			class="hamburger-btn"
+			aria-label={mobileMenuOpen ? 'Chiudi menu' : 'Apri menu'}
+			aria-expanded={mobileMenuOpen}
+			aria-controls="mobile-menu"
+			onclick={toggleMobileMenu}
+		>
+			<span class="hamburger-line" class:open={mobileMenuOpen}></span>
+			<span class="hamburger-line" class:open={mobileMenuOpen}></span>
+			<span class="hamburger-line" class:open={mobileMenuOpen}></span>
+		</button>
 	</div>
+
+	<!-- Mobile menu -->
+	{#if mobileMenuOpen}
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			id="mobile-menu"
+			class="mobile-menu"
+			role="navigation"
+			aria-label="Menu mobile"
+			onkeydown={handleMenuKeydown}
+		>
+			<a bind:this={firstMenuLinkRef} href="/" class="mobile-nav-link" class:active={$page.url.pathname === '/'} aria-current={$page.url.pathname === '/' ? 'page' : undefined} onclick={closeMobileMenu}>Home</a>
+			<a href="/analyze" class="mobile-nav-link" class:active={$page.url.pathname === '/analyze'} aria-current={$page.url.pathname === '/analyze' ? 'page' : undefined} onclick={closeMobileMenu}>📷 Scansiona</a>
+			<a href="/semantic" class="mobile-nav-link" class:active={$page.url.pathname === '/semantic'} aria-current={$page.url.pathname === '/semantic' ? 'page' : undefined} onclick={closeMobileMenu}>🔍 Cerca</a>
+			<a href="/pdf" class="mobile-nav-link" class:active={$page.url.pathname === '/pdf'} aria-current={$page.url.pathname === '/pdf' ? 'page' : undefined} onclick={closeMobileMenu}>📄 PDF</a>
+			<a href="/files" class="mobile-nav-link" class:active={$page.url.pathname === '/files'} aria-current={$page.url.pathname === '/files' ? 'page' : undefined} onclick={closeMobileMenu}>🗂️ File</a>
+			<a href="/folders" class="mobile-nav-link" class:active={$page.url.pathname.startsWith('/folders')} aria-current={$page.url.pathname.startsWith('/folders') ? 'page' : undefined} onclick={closeMobileMenu}>📁 Cartelle</a>
+			<a href="/user" class="mobile-nav-link" class:active={$page.url.pathname.startsWith('/user')} aria-current={$page.url.pathname.startsWith('/user') ? 'page' : undefined} onclick={closeMobileMenu}>👤 Area Personale</a>
+			<a href="/help" class="mobile-nav-link" class:active={$page.url.pathname.startsWith('/help')} aria-current={$page.url.pathname.startsWith('/help') ? 'page' : undefined} onclick={closeMobileMenu}>❓ Guida</a>
+			<div class="mobile-health">
+				<HealthIndicator />
+			</div>
+		</div>
+	{/if}
 </nav>
 
-<main>
+<!-- Onboarding tour – shown automatically on first visit (Requirement 20.2) -->
+<OnboardingTour autoShow={true} />
+
+<main id="main-content" class="page-transition">
 	{@render children()}
 </main>
 
 <style>
+	/* Skip link for keyboard/screen reader accessibility */
+	.skip-link {
+		position: absolute;
+		top: -100%;
+		left: var(--space-4);
+		z-index: 9999;
+		background: var(--color-primary);
+		color: white;
+		padding: var(--space-3) var(--space-6);
+		border-radius: 0 0 var(--space-2) var(--space-2);
+		font-weight: var(--font-weight-semibold);
+		font-size: var(--font-size-sm);
+		text-decoration: none;
+		transition: top 0.2s ease;
+	}
+
+	.skip-link:focus {
+		top: 0;
+		outline: 2px solid white;
+		outline-offset: 2px;
+	}
+
 	:global(:root) {
 		/* Typography Scale - Based on modular scale */
 		--font-size-xs: 0.75rem;     /* 12px */
@@ -229,10 +340,17 @@
 		font-size: var(--font-size-xl);
 		line-height: var(--line-height-tight);
 		transition: opacity 0.2s ease;
+		min-height: 44px; /* WCAG touch target */
 	}
 
 	.nav-logo:hover {
 		opacity: 0.8;
+	}
+
+	.nav-logo:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+		border-radius: var(--space-1);
 	}
 
 	.logo-icon {
@@ -246,9 +364,10 @@
 		background-clip: text;
 	}
 
+	/* Desktop nav links */
 	.nav-links {
 		display: flex;
-		gap: var(--space-8);
+		gap: var(--space-6);
 		align-items: center;
 	}
 
@@ -258,13 +377,22 @@
 		font-weight: var(--font-weight-medium);
 		font-size: var(--font-size-sm);
 		line-height: var(--line-height-normal);
-		padding: var(--space-2) 0;
+		padding: var(--space-2) var(--space-1);
 		position: relative;
 		transition: color 0.2s ease;
+		min-height: 44px; /* WCAG touch target */
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.nav-link:hover {
 		color: var(--color-primary);
+	}
+
+	.nav-link:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+		border-radius: var(--space-1);
 	}
 
 	.nav-link.active {
@@ -282,22 +410,141 @@
 		border-radius: 2px 2px 0 0;
 	}
 
+	/* Hamburger button - hidden on desktop */
+	.hamburger-btn {
+		display: none;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 5px;
+		width: 44px;
+		height: 44px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: var(--space-2);
+		border-radius: var(--space-2);
+		transition: background-color 0.2s ease;
+	}
+
+	.hamburger-btn:hover {
+		background-color: var(--color-bg-secondary);
+	}
+
+	.hamburger-btn:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+
+	.hamburger-line {
+		display: block;
+		width: 22px;
+		height: 2px;
+		background-color: var(--color-text);
+		border-radius: 2px;
+		transition: transform 0.3s ease, opacity 0.3s ease;
+		transform-origin: center;
+	}
+
+	/* Animate hamburger to X when open */
+	.hamburger-line:nth-child(1).open {
+		transform: translateY(7px) rotate(45deg);
+	}
+
+	.hamburger-line:nth-child(2).open {
+		opacity: 0;
+		transform: scaleX(0);
+	}
+
+	.hamburger-line:nth-child(3).open {
+		transform: translateY(-7px) rotate(-45deg);
+	}
+
+	/* Mobile menu */
+	.mobile-menu {
+		display: flex;
+		flex-direction: column;
+		background: var(--color-bg);
+		border-top: 1px solid var(--color-border);
+		padding: var(--space-4) var(--space-6);
+		gap: var(--space-1);
+		animation: slide-in-down 0.2s ease-out;
+	}
+
+	.mobile-nav-link {
+		text-decoration: none;
+		color: var(--color-text-muted);
+		font-weight: var(--font-weight-medium);
+		font-size: var(--font-size-base);
+		padding: var(--space-3) var(--space-4);
+		border-radius: var(--space-2);
+		transition: background-color 0.2s ease, color 0.2s ease;
+		min-height: 44px; /* WCAG touch target */
+		display: flex;
+		align-items: center;
+	}
+
+	.mobile-nav-link:hover {
+		background-color: var(--color-bg-secondary);
+		color: var(--color-primary);
+	}
+
+	.mobile-nav-link:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+
+	.mobile-nav-link.active {
+		background-color: var(--color-primary-subtle);
+		color: var(--color-primary);
+		font-weight: var(--font-weight-semibold);
+	}
+
+	.mobile-health {
+		padding: var(--space-3) var(--space-4);
+		border-top: 1px solid var(--color-border-subtle);
+		margin-top: var(--space-2);
+	}
+
 	main {
 		min-height: calc(100vh - 60px);
 		background: var(--color-bg);
 	}
 
-	@media (max-width: 640px) {
+	/* Responsive: show hamburger, hide desktop links on mobile */
+	@media (max-width: 768px) {
+		.nav-links {
+			display: none;
+		}
+
+		.hamburger-btn {
+			display: flex;
+		}
+
 		.nav-container {
 			padding: var(--space-3) var(--space-4);
 		}
+	}
 
+	/* Tablet: slightly smaller gaps */
+	@media (min-width: 769px) and (max-width: 1024px) {
 		.nav-links {
 			gap: var(--space-4);
 		}
 
 		.nav-link {
 			font-size: var(--font-size-xs);
+		}
+	}
+
+	/* Reduced motion: disable menu animation */
+	@media (prefers-reduced-motion: reduce) {
+		.mobile-menu {
+			animation: none;
+		}
+
+		.hamburger-line {
+			transition: none;
 		}
 	}
 </style>

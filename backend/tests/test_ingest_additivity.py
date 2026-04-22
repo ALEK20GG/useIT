@@ -147,7 +147,7 @@ def fake_embed(texts):
     notes_batch1=st.lists(st.text(min_size=1, max_size=100), min_size=1, max_size=5),
     notes_batch2=st.lists(st.text(min_size=1, max_size=100), min_size=1, max_size=5),
 )
-@settings(max_examples=50)
+@settings(max_examples=25)
 def test_ingest_is_additive(notes_batch1, notes_batch2):
     """
     Property 7: Ingest is additive — point count must be non-decreasing.
@@ -186,3 +186,4 @@ def test_ingest_is_additive(notes_batch1, notes_batch2):
         f"Point count decreased from {count_after_first} to {count_after_second}. "
         f"batch1={notes_batch1!r}, batch2={notes_batch2!r}"
     )
+

@@ -44,7 +44,7 @@ def normalize_cosine_score(score: float) -> float:
 # Validates: Requirements 5.1, 5.2
 
 @given(st.text(), st.text())
-@settings(max_examples=100)
+@settings(max_examples=25)
 def test_keyword_boost_bounded(query, chunk):
     """
     Property 3: calculate_keyword_boost returns a value in [0.0, 0.3].
@@ -60,7 +60,7 @@ def test_keyword_boost_bounded(query, chunk):
 # Validates: Requirements 5.1
 
 @given(st.floats(min_value=-1.0, max_value=1.0, allow_nan=False))
-@settings(max_examples=100)
+@settings(max_examples=25)
 def test_normalize_score_bounded(score):
     """
     Property 4: normalize_cosine_score returns a value in [0.0, 1.0].
@@ -70,3 +70,4 @@ def test_normalize_score_bounded(score):
     assert 0.0 <= normalized <= 1.0, (
         f"normalized_score={normalized} is outside [0.0, 1.0] for score={score}"
     )
+

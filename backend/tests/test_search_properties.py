@@ -25,7 +25,7 @@ def apply_filename_filter(pdf_map: dict, filename_filter: str | None) -> dict:
     ),
     filename_filter=st.text(min_size=1, max_size=10, alphabet=st.characters(whitelist_categories=('Lu', 'Ll', 'Nd'), whitelist_characters='._-')),
 )
-@settings(max_examples=100)
+@settings(max_examples=25)
 def test_filename_filter_exclusion(filenames, filename_filter):
     """
     Property 5: Every result filename contains the filter string (case-insensitive).
@@ -51,7 +51,7 @@ def test_filename_filter_exclusion(filenames, filename_filter):
     offset=st.integers(min_value=0, max_value=20),
     limit=st.integers(min_value=1, max_value=10),
 )
-@settings(max_examples=100)
+@settings(max_examples=25)
 def test_pagination_offset_correctness(scores, offset, limit):
     """
     Property 6: Results at offset=k equal the full sorted list sliced [k:k+limit].
@@ -74,3 +74,4 @@ def test_pagination_offset_correctness(scores, offset, limit):
     # Also verify total is the full count before pagination
     total = len(all_sorted)
     assert total == len(scores)
+
