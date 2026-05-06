@@ -1,0 +1,17 @@
+{
+  "hot_reload": {
+    "search_result_limit": 10,
+    "search_score_threshold": 0.0,
+    "search_hybrid_weight": 0.5,
+    "rate_limit_requests_per_minute": 60,
+    "rate_limit_upload_per_hour": 20,
+    "content_cache_ttl_seconds": 3600,
+    "content_source_timeout_seconds": 10.0,
+    "content_source_priority": [
+      "internal_database",
+      "manufacturer_website",
+      "video_platform"
+    ],
+    "log_level": "INFO"
+  }
+}
