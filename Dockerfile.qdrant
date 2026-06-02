@@ -1,0 +1,25 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Qdrant – standalone vector database container
+#
+# Runs on a SEPARATE server from the main application.
+# The UseIt app connects to this via QDRANT_URL env var.
+#
+# Usage:
+#   docker build -f Dockerfile.qdrant -t useit-qdrant .
+#   docker run -d \
+#     -p 6333:6333 -p 6334:6334 \
+#     -v qdrant_storage:/qdrant/storage \
+#     --name useit-qdrant \
+#     useit-qdrant
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FROM qdrant/qdrant:latest
+
+# gRPC port (optional, used for high-throughput scenarios)
+ENV QDRANT__SERVICE__GRPC_PORT=6334
+
+# HTTP API: 6333
+# gRPC API: 6334
+EXPOSE 6333 6334
+
+VOLUME ["/qdrant/storage"]

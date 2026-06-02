@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Kiro / IDE
+.kiro
+.vscode
+
+# Python
+backend/.venv
+backend/__pycache__
+backend/**/__pycache__
+backend/**/*.pyc
+backend/.hypothesis
+backend/.pytest_cache
+backend/tests/
+
+# Node
+frontend/node_modules
+frontend/.svelte-kit
+frontend/build
+
+# Environment files (secrets must not be baked into the image)
+.env
+frontend/.env
+**/.env
+
+# Local Qdrant data
+qdrant_local/
+qdrant_storage/
+
+# Temp / docs
+temp/
+documentation/
+*.log
+
+# Test server (not part of the app)
+test-server-blueprint/

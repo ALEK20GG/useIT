@@ -1,0 +1,62 @@
+[
+  {
+    "id": "a165996a-efb7-4bf3-b60c-62945da81154",
+    "filename": "a165996a-efb7-4bf3-b60c-62945da81154.pdf",
+    "original_filename": "pdf-sample_0 (1).pdf",
+    "folder_id": "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741",
+    "file_size": 13264,
+    "content_type": "application/pdf",
+    "upload_date": "2026-06-02T19:20:34.702953+00:00",
+    "chunk_count": 1,
+    "status": "indexed",
+    "file_path": "C:\\Users\\lolik\\Downloads\\useIT-main\\backend\\storage\\uploads\\18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741\\a165996a-efb7-4bf3-b60c-62945da81154.pdf"
+  },
+  {
+    "id": "f05c5a8b-9b0c-4b85-9d52-cb2d2254f978",
+    "filename": "f05c5a8b-9b0c-4b85-9d52-cb2d2254f978.pdf",
+    "original_filename": "philos (1).pdf",
+    "folder_id": "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741",
+    "file_size": 50629651,
+    "content_type": "application/pdf",
+    "upload_date": "2026-06-02T19:39:11.900290+00:00",
+    "chunk_count": 4247,
+    "status": "indexed",
+    "file_path": "C:\\Users\\lolik\\Downloads\\useIT-main\\backend\\storage\\uploads\\18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741\\f05c5a8b-9b0c-4b85-9d52-cb2d2254f978.pdf"
+  },
+  {
+    "id": "9f01b4c8-65a6-49d7-b28c-18515cb36b1f",
+    "filename": "9f01b4c8-65a6-49d7-b28c-18515cb36b1f.pdf",
+    "original_filename": "Crime.pdf",
+    "folder_id": "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741",
+    "file_size": 2352410,
+    "content_type": "application/pdf",
+    "upload_date": "2026-06-02T19:46:05.789569+00:00",
+    "chunk_count": 1057,
+    "status": "indexed",
+    "file_path": "C:\\Users\\lolik\\Downloads\\useIT-main\\backend\\storage\\uploads\\18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741\\9f01b4c8-65a6-49d7-b28c-18515cb36b1f.pdf"
+  },
+  {
+    "id": "657c3819-241f-41e8-acf8-238a4c674521",
+    "filename": "657c3819-241f-41e8-acf8-238a4c674521.pdf",
+    "original_filename": "itpacs_2ed_cafiero.pdf",
+    "folder_id": "eb9d166f-c2aa-4099-82ad-a5c611b964c8",
+    "file_size": 6728852,
+    "content_type": "application/pdf",
+    "upload_date": "2026-06-02T20:28:00.492009+00:00",
+    "chunk_count": 844,
+    "status": "indexed",
+    "file_path": "C:\\Users\\lolik\\Downloads\\useIT-main\\backend\\storage\\uploads\\eb9d166f-c2aa-4099-82ad-a5c611b964c8\\657c3819-241f-41e8-acf8-238a4c674521.pdf"
+  },
+  {
+    "id": "65b0b0df-9b24-47a0-b75e-c7edbcf91500",
+    "filename": "65b0b0df-9b24-47a0-b75e-c7edbcf91500.pdf",
+    "original_filename": "Crime (1).pdf",
+    "folder_id": "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741",
+    "file_size": 2352410,
+    "content_type": "application/pdf",
+    "upload_date": "2026-06-02T21:10:52.313004+00:00",
+    "chunk_count": 1057,
+    "status": "indexed",
+    "file_path": "C:\\Users\\lolik\\Downloads\\useIT-main\\backend\\storage\\uploads\\18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741\\65b0b0df-9b24-47a0-b75e-c7edbcf91500.pdf"
+  }
+]

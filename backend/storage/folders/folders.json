@@ -1,0 +1,62 @@
+{
+  "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741": {
+    "id": "18d7bbb6-5a2b-4f9f-9d92-f0b1d7b91741",
+    "name": "Dispositivi",
+    "description": "Device documentation and manuals",
+    "parent_id": null,
+    "path": "/Dispositivi",
+    "content_types": [
+      "device_documentation",
+      "pdf_documents"
+    ],
+    "qdrant_collection": "dispositivi",
+    "metadata": {
+      "is_default": true,
+      "icon": "device",
+      "color": "#2563eb"
+    },
+    "created_at": "2026-04-21 18:00:48.452858+00:00",
+    "updated_at": "2026-06-02 21:11:46.394382+00:00",
+    "content_count": 4
+  },
+  "20a1622b-ccb1-4ebc-bab1-05a727c31893": {
+    "id": "20a1622b-ccb1-4ebc-bab1-05a727c31893",
+    "name": "Appunti",
+    "description": "Personal notes and documentation",
+    "parent_id": null,
+    "path": "/Appunti",
+    "content_types": [
+      "notes",
+      "user_content"
+    ],
+    "qdrant_collection": "appunti",
+    "metadata": {
+      "is_default": true,
+      "icon": "note",
+      "color": "#059669"
+    },
+    "created_at": "2026-04-21 18:00:48.468711+00:00",
+    "updated_at": "2026-04-21 18:00:48.468711+00:00",
+    "content_count": 0
+  },
+  "eb9d166f-c2aa-4099-82ad-a5c611b964c8": {
+    "id": "eb9d166f-c2aa-4099-82ad-a5c611b964c8",
+    "name": "Scuola",
+    "description": "Educational materials and school content",
+    "parent_id": null,
+    "path": "/Scuola",
+    "content_types": [
+      "school_materials",
+      "pdf_documents"
+    ],
+    "qdrant_collection": "scuola",
+    "metadata": {
+      "is_default": true,
+      "icon": "school",
+      "color": "#dc2626"
+    },
+    "created_at": "2026-04-21 18:00:48.700145+00:00",
+    "updated_at": "2026-06-02 20:28:38.169394+00:00",
+    "content_count": 1
+  }
+}

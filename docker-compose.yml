@@ -1,0 +1,88 @@
+services:
+  useit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # PUBLIC_BACKEND_URL is baked into the SvelteKit client bundle at build time.
+        # In production: set this to the public URL where the FastAPI backend is reachable
+        # from the user's browser (e.g. https://api.yourdomain.com or http://server-ip:8000)
+        PUBLIC_BACKEND_URL: ${PUBLIC_BACKEND_URL:-http://localhost:8000}
+    container_name: useit-app
+    ports:
+      - "127.0.0.1:3000:3000"   # SvelteKit frontend (SSR + SSO)
+      - "127.0.0.1:8000:8000"   # FastAPI backend
+
+    environment:
+      # ── Qdrant (external server) ─────────────────────────────────────────────
+      # Read by: FastAPI backend (config.py, prefix QDRANT_)
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant.sitai.duckdns.org}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      - QDRANT_ALLOW_EMBEDDED=false
+
+      # ── PDF storage ──────────────────────────────────────────────────────────
+      # Read by: FastAPI backend — must match the volume mount path below
+      - PDFS_DIR=/app/frontend/static/pdf-source
+
+      # ── CORS ─────────────────────────────────────────────────────────────────
+      # Read by: FastAPI backend — allow the SvelteKit frontend origin
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+
+      # ── SSO ──────────────────────────────────────────────────────────────────
+      # Read by: SvelteKit frontend (hooks.server.ts, sso/*.ts)
+      - SSO_MODE=${SSO_MODE:-dev}
+      - JWT_SECRET=${USEIT_JWT_SECRET:-dev-secret-change-in-production}
+      - JWT_ISSUER=${JWT_ISSUER:-sso-portal}
+      - APP_AUDIENCE=${APP_AUDIENCE:-blueprint-app}
+      - PORTAL_URL=${PORTAL_URL:-http://localhost:5000}
+      - SESSION_SECRET=${SESSION_SECRET:-dev-session-secret-min-16-chars}
+
+      # ── SvelteKit (adapter-node) ──────────────────────────────────────────────
+      # Read by: Node.js process (adapter-node runtime)
+      - PORT=3000
+      - HOST=0.0.0.0
+      # URL of the FastAPI backend as seen by the user's browser
+      # In production: set to the public hostname/IP of this server
+      - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:8000}
+
+      # ── Session / rate limiting ───────────────────────────────────────────────
+      # Read by: SvelteKit SSO middleware
+      - DEV_USER_EMAIL=${DEV_USER_EMAIL:-demo@example.com}
+      - MAX_SESSIONS_PER_USER=${MAX_SESSIONS_PER_USER:-3}
+      - MAX_SESSIONS_GLOBAL=${MAX_SESSIONS_GLOBAL:-100}
+      - SESSION_TTL_SECONDS=${SESSION_TTL_SECONDS:-28800}
+
+    volumes:
+      # Persist uploaded/indexed PDF files
+      # Must match PDFS_DIR env var above
+      - useit_pdf_data:/app/frontend/static/pdf-source
+      # Persist backend storage (folders.json, user_area, audit log, search history)
+      - useit_backend_data:/app/backend/storage
+      # Persist frontend data (whitelist.json)
+      - useit_frontend_data:/app/frontend/data
+
+    restart: unless-stopped
+
+    networks:
+      - useit_network
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  useit_pdf_data:
+    driver: local
+  useit_backend_data:
+    driver: local
+  useit_frontend_data:
+    driver: local
+
+networks:
+  useit_network:
+    driver: bridge

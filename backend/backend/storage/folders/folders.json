@@ -1,0 +1,77 @@
+{
+  "f6419a68-9b91-46b2-929f-74db3b4bff72": {
+    "id": "f6419a68-9b91-46b2-929f-74db3b4bff72",
+    "name": "Dispositivi",
+    "description": "Device documentation and manuals",
+    "parent_id": null,
+    "path": "/Dispositivi",
+    "content_types": [
+      "device_documentation",
+      "pdf_documents"
+    ],
+    "qdrant_collection": "dispositivi",
+    "metadata": {
+      "is_default": true,
+      "icon": "device",
+      "color": "#2563eb"
+    },
+    "created_at": "2026-05-20 12:26:35.541983+00:00",
+    "updated_at": "2026-05-21 13:18:59.667898+00:00",
+    "content_count": 2
+  },
+  "5c17c392-cc73-4fc4-980a-7713775df6f6": {
+    "id": "5c17c392-cc73-4fc4-980a-7713775df6f6",
+    "name": "Appunti",
+    "description": "Personal notes and documentation",
+    "parent_id": null,
+    "path": "/Appunti",
+    "content_types": [
+      "notes",
+      "user_content"
+    ],
+    "qdrant_collection": "appunti",
+    "metadata": {
+      "is_default": true,
+      "icon": "note",
+      "color": "#059669"
+    },
+    "created_at": "2026-05-20 12:26:35.541983+00:00",
+    "updated_at": "2026-05-20 12:26:35.541983+00:00",
+    "content_count": 0
+  },
+  "83dd1b07-5754-4969-b4ee-cc0d4e9d0b95": {
+    "id": "83dd1b07-5754-4969-b4ee-cc0d4e9d0b95",
+    "name": "Scuola",
+    "description": "Educational materials and school content",
+    "parent_id": null,
+    "path": "/Scuola",
+    "content_types": [
+      "school_materials",
+      "pdf_documents"
+    ],
+    "qdrant_collection": "scuola",
+    "metadata": {
+      "is_default": true,
+      "icon": "school",
+      "color": "#dc2626"
+    },
+    "created_at": "2026-05-20 12:26:35.566914+00:00",
+    "updated_at": "2026-05-20 12:26:35.566914+00:00",
+    "content_count": 0
+  },
+  "b7125a0f-5650-4134-a496-fffd2967c484": {
+    "id": "b7125a0f-5650-4134-a496-fffd2967c484",
+    "name": "dummy",
+    "description": null,
+    "parent_id": null,
+    "path": "/dummy",
+    "content_types": [
+      "pdf_documents"
+    ],
+    "qdrant_collection": "dummy_b7125a0f",
+    "metadata": {},
+    "created_at": "2026-05-21 13:18:45.115677+00:00",
+    "updated_at": "2026-05-25 12:56:07.652588+00:00",
+    "content_count": 1
+  }
+}
